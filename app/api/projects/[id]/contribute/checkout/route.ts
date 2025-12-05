@@ -1,9 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { connectDB } from '@/lib/db';
 import { Project } from '@/lib/models/Project';
-import { Contribution } from '@/lib/models/Contribution';
 import { verifyToken, extractTokenFromHeader } from '@/lib/utils/jwt';
-
+import { CardanoSimulator } from '@/lib/services/cardano/simulator';
 interface RouteContext {
   params: Promise<{ id: string }>;
 }
@@ -68,46 +67,30 @@ export async function POST(request: NextRequest, context: RouteContext) {
       );
     }
     
-    // Créer une contribution en attente
-    const contribution = new Contribution({
-      project: project._id,
-      user: payload.userId,
-      amountADA,
-      txHash: `mock_tx_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
-      status: 'pending',
-    });
-    
-    await contribution.save();
-    
-    // Simuler une confirmation après 2 secondes (pour le dev)
-    setTimeout(async () => {
-      try {
-        contribution.status = 'confirmed';
-        await contribution.save();
-        
-        // Mettre à jour le montant collecté
-        project.raisedADA = (project.raisedADA || 0) + amountADA;
-        await project.save();
-        
-        console.log(`✅ Contribution ${contribution._id} confirmée pour le projet ${project._id}`);
-      } catch (error) {
-        console.error('Erreur confirmation automatique:', error);
-      }
-    }, 2000);
-    
-    return NextResponse.json({
-      success: true,
-      message: 'Contribution initiée. La confirmation sera traitée automatiquement.',
-      data: {
-        contributionId: contribution._id,
-        amountADA,
-        status: 'pending',
-        txHash: contribution.txHash,
-      },
-    });
+    // Générer un checkout mock pour Cardano
+    const checkoutData = {
+  paymentAddress: CardanoSimulator.generateMockAddress(),
+  amountADA,
+  projectId: project._id,
+  projectTitle: project.title,
+  checkoutId: `checkout_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+  expiresAt: new Date(Date.now() + 15 * 60 * 1000),
+  qrCodeUrl: CardanoSimulator.generateQRCode(amountADA, project._id.toString()),
+  isSimulated: true,
+  simulationNote: 'Mode développement - Transaction sera automatiquement confirmée'
+};
+
+// Démarrer la simulation de confirmation
+CardanoSimulator.simulateWebhook(project._id.toString(), amountADA);
+
+return NextResponse.json({
+  success: true,
+  message: 'Checkout généré (mode simulation Cardano)',
+  data: checkoutData,
+});
 
   } catch (error: any) {
-    console.error('Contribute error:', error);
+    console.error('Checkout error:', error);
     
     if (error.message === 'Token invalide ou expiré') {
       return NextResponse.json(
@@ -119,7 +102,7 @@ export async function POST(request: NextRequest, context: RouteContext) {
     return NextResponse.json(
       { 
         success: false,
-        error: 'Erreur lors de la contribution' 
+        error: 'Erreur lors de la génération du checkout' 
       },
       { status: 500 }
     );
