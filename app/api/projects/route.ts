@@ -1,8 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { connectDB } from '@/lib/db';
 import { Project } from '@/lib/models/Project';
-import { authMiddleware, getAuthUser } from '@/lib/middleware/auth';
-import { uploadImage, uploadPDF } from '@/lib/services/uploadService';
+import { verifyToken, extractTokenFromHeader } from '@/lib/utils/jwt';
 
 // GET: Liste des projets
 export async function GET(request: NextRequest) {
@@ -10,49 +9,27 @@ export async function GET(request: NextRequest) {
     await connectDB();
     
     const { searchParams } = new URL(request.url);
-    const page = parseInt(searchParams.get('page') || '1');
+    const status = searchParams.get('status') || 'published';
     const limit = parseInt(searchParams.get('limit') || '10');
-    const status = searchParams.get('status');
-    const search = searchParams.get('search');
-    const sortBy = searchParams.get('sortBy') || 'createdAt';
-    const sortOrder = searchParams.get('sortOrder') || 'desc';
+    const page = parseInt(searchParams.get('page') || '1');
     
-    // Construire le filtre
-    const filter: any = {};
-    
-    // Seuls les projets publiés sont visibles par défaut
-    if (!status && !request.headers.get('authorization')) {
-      filter.status = 'published';
-    } else if (status) {
-      filter.status = status;
-    }
-    
-    // Recherche par titre ou description
-    if (search) {
-      filter.$or = [
-        { title: { $regex: search, $options: 'i' } },
-        { description: { $regex: search, $options: 'i' } },
-      ];
-    }
+    const filter: any = { status };
     
     // Pagination
     const skip = (page - 1) * limit;
     
-    // Tri
-    const sort: any = {};
-    sort[sortBy] = sortOrder === 'asc' ? 1 : -1;
-    
     const [projects, total] = await Promise.all([
       Project.find(filter)
         .populate('owner', 'name email')
-        .sort(sort)
+        .sort({ createdAt: -1 })
         .skip(skip)
         .limit(limit),
       Project.countDocuments(filter),
     ]);
     
     return NextResponse.json({
-      projects,
+      success: true,
+      data: projects,
       pagination: {
         page,
         limit,
@@ -65,110 +42,126 @@ export async function GET(request: NextRequest) {
     console.error('Get projects error:', error);
     
     return NextResponse.json(
-      { error: 'Erreur serveur' },
+      { 
+        success: false,
+        error: 'Erreur lors de la récupération des projets' 
+      },
       { status: 500 }
     );
   }
 }
 
-// POST: Créer un projet
+// POST: Créer un projet (JSON seulement)
 export async function POST(request: NextRequest) {
+  console.log('🚀 Create project endpoint called');
+  
   try {
-    // Vérifier l'authentification
-    const authResponse = await authMiddleware(request);
-    if (authResponse.status !== 200) {
-      return authResponse;
-    }
-
     await connectDB();
     
-    const { userId } = getAuthUser(request);
-    
-    // Vérifier si l'utilisateur a déjà un projet actif
-    const existingProject = await Project.findOne({
-      owner: userId,
-      status: { $in: ['pending', 'published', 'funded'] },
-    });
-    
-    if (existingProject) {
+    // Vérifier l'authentification
+    const token = extractTokenFromHeader(request.headers.get('authorization'));
+    if (!token) {
       return NextResponse.json(
-        { error: 'Vous avez déjà une campagne active. Une seule campagne autorisée à la fois.' },
-        { status: 400 }
+        { success: false, error: 'Authentification requise' },
+        { status: 401 }
       );
     }
     
-    const formData = await request.formData();
+    const payload = verifyToken(token);
     
-    const title = formData.get('title') as string;
-    const description = formData.get('description') as string;
-    const goalADA = parseFloat(formData.get('goalADA') as string);
-    const deadline = formData.get('deadline') as string;
-    const imageFile = formData.get('image') as File;
-    const pdfFile = formData.get('pdf') as File;
+    // Parser le body
+    const body = await request.json();
+    console.log('📦 Body received:', body);
     
+    const { title, description, goalADA, deadline } = body;
+
     // Validation
-    if (!title || !description || !goalADA || !deadline || !imageFile || !pdfFile) {
+    if (!title?.trim()) {
       return NextResponse.json(
-        { error: 'Tous les champs sont requis' },
+        { success: false, error: 'Le titre est requis' },
         { status: 400 }
       );
     }
     
-    if (goalADA < 10) {
+    if (!description?.trim()) {
       return NextResponse.json(
-        { error: 'Le objectif minimum est 10 ADA' },
+        { success: false, error: 'La description est requise' },
         { status: 400 }
       );
     }
     
+    if (!goalADA || goalADA < 10) {
+      return NextResponse.json(
+        { success: false, error: 'Le objectif minimum est 10 ADA' },
+        { status: 400 }
+      );
+    }
+    
+    if (!deadline) {
+      return NextResponse.json(
+        { success: false, error: 'La date limite est requise' },
+        { status: 400 }
+      );
+    }
+
     const deadlineDate = new Date(deadline);
     if (deadlineDate <= new Date()) {
       return NextResponse.json(
-        { error: 'La date limite doit être dans le futur' },
+        { success: false, error: 'La date limite doit être dans le futur' },
         { status: 400 }
       );
     }
-    
-    // Upload des fichiers
-    const [imageUrl, pdfUrl] = await Promise.all([
-      uploadImage(imageFile),
-      uploadPDF(pdfFile),
-    ]);
-    
-    // Créer le projet
+
+    // Créer le projet avec valeurs par défaut
     const project = new Project({
-      title,
-      description,
-      imageUrl,
-      pdfUrl,
+      title: title.trim(),
+      description: description.trim(),
       goalADA,
       deadline: deadlineDate,
-      owner: userId,
-      status: 'pending', // Doit être approuvé par l'admin
+      owner: payload.userId, // Utiliser l'ID du token
+      status: 'draft',
+      // imageUrl et pdfUrl auront les valeurs par défaut du modèle
     });
-    
+
+    console.log('💾 Saving project...');
     await project.save();
     
     await project.populate('owner', 'name email');
+
+    console.log('✅ Project saved:', project._id);
     
     return NextResponse.json({
-      message: 'Projet créé avec succès. En attente d\'approbation.',
-      project,
+      success: true,
+      message: 'Projet créé avec succès',
+      data: project,
     }, { status: 201 });
 
   } catch (error: any) {
-    console.error('Create project error:', error);
+    console.error('❌ Create project error:', error);
     
     if (error.name === 'ValidationError') {
       const errors = Object.values(error.errors).map((err: any) => err.message);
       return NextResponse.json(
-        { error: errors.join(', ') },
+        { 
+          success: false,
+          error: errors.join(', ') 
+        },
         { status: 400 }
       );
     }
     
+    if (error.message === 'Token invalide ou expiré') {
+      return NextResponse.json(
+        { success: false, error: 'Token invalide ou expiré' },
+        { status: 401 }
+      );
+    }
+    
     return NextResponse.json(
-      { error: 'Erreur serveur' },
+      { 
+        success: false,
+        error: 'Erreur lors de la création du projet' 
+      },
       { status: 500 }
     );
   }
