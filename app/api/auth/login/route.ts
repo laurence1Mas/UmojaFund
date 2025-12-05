@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { connectDB } from '@/lib/db';
 import { User } from '@/lib/models/User';
 import { generateToken } from '@/lib/utils/jwt';
+import bcrypt from 'bcryptjs';
 
 export async function POST(request: NextRequest) {
   try {
@@ -11,27 +12,27 @@ export async function POST(request: NextRequest) {
     const { email, password } = body;
 
     // Validation
-    if (!email || !password) {
+    if (!email?.trim() || !password) {
       return NextResponse.json(
-        { error: 'Email et mot de passe sont requis' },
+        { success: false, error: 'Email et mot de passe sont requis' },
         { status: 400 }
       );
     }
 
     // Trouver l'utilisateur
-    const user = await User.findOne({ email });
+    const user = await User.findOne({ email: email.toLowerCase().trim() });
     if (!user) {
       return NextResponse.json(
-        { error: 'Email ou mot de passe incorrect' },
+        { success: false, error: 'Email ou mot de passe incorrect' },
         { status: 401 }
       );
     }
 
-    // Vérifier le mot de passe
-    const isValidPassword = await user.comparePassword(password);
+    // Vérifier le mot de passe MANUELLEMENT
+    const isValidPassword = await bcrypt.compare(password, user.passwordHash);
     if (!isValidPassword) {
       return NextResponse.json(
-        { error: 'Email ou mot de passe incorrect' },
+        { success: false, error: 'Email ou mot de passe incorrect' },
         { status: 401 }
       );
     }
@@ -44,6 +45,7 @@ export async function POST(request: NextRequest) {
     });
 
     return NextResponse.json({
+      success: true,
       message: 'Connexion réussie',
       token,
       user: {
@@ -52,6 +54,7 @@ export async function POST(request: NextRequest) {
         email: user.email,
         role: user.role,
         walletAddress: user.walletAddress,
+        createdAt: user.createdAt,
       },
     });
 
@@ -59,7 +62,7 @@ export async function POST(request: NextRequest) {
     console.error('Login error:', error);
     
     return NextResponse.json(
-      { error: 'Erreur serveur' },
+      { success: false, error: 'Une erreur est survenue lors de la connexion' },
       { status: 500 }
     );
   }

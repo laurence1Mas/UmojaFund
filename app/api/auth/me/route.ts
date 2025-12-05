@@ -1,30 +1,37 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { connectDB } from '@/lib/db';
 import { User } from '@/lib/models/User';
-import { authMiddleware, getAuthUser } from '@/lib/middleware/auth';
+import { verifyToken, extractTokenFromHeader } from '@/lib/utils/jwt';
 
 export async function GET(request: NextRequest) {
   try {
-    // Appliquer le middleware d'authentification
-    const authResponse = await authMiddleware(request);
-    if (authResponse.status !== 200) {
-      return authResponse;
-    }
-
     await connectDB();
     
-    const { userId } = getAuthUser(request);
+    // Extraire le token du header
+    const token = extractTokenFromHeader(request.headers.get('authorization'));
     
-    const user = await User.findById(userId).select('-passwordHash');
+    if (!token) {
+      return NextResponse.json(
+        { success: false, error: 'Token d\'authentification manquant' },
+        { status: 401 }
+      );
+    }
+
+    // Vérifier le token
+    const payload = verifyToken(token);
+    
+    // Trouver l'utilisateur
+    const user = await User.findById(payload.userId).select('-passwordHash');
     
     if (!user) {
       return NextResponse.json(
-        { error: 'Utilisateur non trouvé' },
+        { success: false, error: 'Utilisateur non trouvé' },
         { status: 404 }
       );
     }
 
     return NextResponse.json({
+      success: true,
       user: {
         id: user._id,
         name: user.name,
@@ -36,10 +43,17 @@ export async function GET(request: NextRequest) {
     });
 
   } catch (error: any) {
-    console.error('Get me error:', error);
+    console.error('Get user profile error:', error);
+    
+    if (error.message === 'Token invalide ou expiré') {
+      return NextResponse.json(
+        { success: false, error: 'Token invalide ou expiré' },
+        { status: 401 }
+      );
+    }
     
     return NextResponse.json(
-      { error: 'Erreur serveur' },
+      { success: false, error: 'Erreur lors de la récupération du profil' },
       { status: 500 }
     );
   }
