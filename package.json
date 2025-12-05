@@ -10,8 +10,10 @@
     "test": "jest",
     "test:watch": "jest --watch",
     "seed": "tsx scripts/seed.ts",
-    "db:reset": "npm run seed"
-    
+    "db:reset": "npm run seed",
+    "setup": "tsx scripts/setup.ts",
+    "verify": "npm run setup",
+    "health": "curl http://localhost:3000/api/health"
   },
   "dependencies": {
     "@hookform/resolvers": "^3.10.0",
@@ -87,6 +89,7 @@
     "supertest": "^7.1.4",
     "tailwindcss": "^4.1.9",
     "ts-jest": "^29.4.6",
+    "tsx": "^4.21.0",
     "tw-animate-css": "1.3.3",
     "typescript": "^5"
   }
