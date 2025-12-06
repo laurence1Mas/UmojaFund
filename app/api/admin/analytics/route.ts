@@ -26,14 +26,14 @@ export async function GET(request: NextRequest) {
         { $match: { status: 'confirmed' } },
         { $group: { _id: null, total: { $sum: '$amountADA' } } }
       ]),
-      Project.countDocuments({ status: 'published' }),
+      Project.countDocuments({ status: 'active' }),
       Project.countDocuments({ status: 'pending' }),
       Contribution.find({ status: 'confirmed' })
         .sort({ date: -1 })
         .limit(10)
         .populate('project', 'title')
         .populate('user', 'name'),
-      Project.find({ status: 'published' })
+      Project.find({ status: 'active' })
         .sort({ raisedADA: -1 })
         .limit(5)
         .populate('owner', 'name')

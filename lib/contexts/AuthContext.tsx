@@ -4,13 +4,59 @@ import type React from "react"
 import { createContext, useContext, useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
 
+interface UserPreferences {
+  language: string;
+  currency: string;
+  timezone: string;
+  theme: 'light' | 'dark' | 'system';
+  dateFormat: string;
+  notifications: {
+    email: boolean;
+    projectUpdates: boolean;
+    fundingAlerts: boolean;
+    weeklyDigest: boolean;
+    marketingEmails: boolean;
+    push: boolean;
+  };
+}
+
+interface UserStats {
+  totalFunded: number;
+  activeProjects: number;
+  totalReturns: number;
+  portfolioValue: number;
+  totalContributions: number;
+  pendingReturns: number;
+  lastUpdated: Date;
+}
+
 interface User {
   id: string
   name: string
   email: string
-  role: string
+  role: 'user' | 'admin' | 'superadmin'
   walletAddress?: string
+  
+  // Profile fields
+  phone?: string
+  bio?: string
+  location?: string
+  website?: string
+  avatar?: string
+  
+  // Preferences
+  preferences?: UserPreferences
+  
+  // Statistics
+  stats?: UserStats
+  
+  // Security
+  twoFactorEnabled?: boolean
+  lastPasswordChange?: Date
+  
+  // Dates
   createdAt: string
+  updatedAt: string
 }
 
 interface AuthContextType {
@@ -79,8 +125,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
       if (response.ok) {
         const data = await response.json()
-        setUser(data.user)
-        setToken(storedToken)
+        if (data.success) {
+          setUser(data.user)
+          setToken(storedToken)
+        } else {
+          // Si l'API retourne une erreur
+          storage.removeToken()
+          setUser(null)
+          setToken(null)
+        }
       } else {
         storage.removeToken()
         setUser(null)
@@ -110,7 +163,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         storage.setToken(data.token)
         setToken(data.token)
         setUser(data.user)
-        router.push("/dashboard")
+        
+        // Redirection basée sur le rôle
+        if (data.user.role === 'admin' || data.user.role === 'superadmin') {
+          router.push("/admin")
+        } else {
+          router.push("/dashboard")
+        }
+        
         return { success: true }
       } else {
         return { success: false, message: data.error }
@@ -135,7 +195,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         storage.setToken(data.token)
         setToken(data.token)
         setUser(data.user)
-        router.push("/dashboard")
+        
+        // Redirection basée sur le rôle
+        if (data.user.role === 'admin' || data.user.role === 'superadmin') {
+          router.push("/admin")
+        } else {
+          router.push("/dashboard")
+        }
+        
         return { success: true }
       } else {
         return { success: false, message: data.error }
@@ -150,7 +217,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     storage.removeToken()
     setUser(null)
     setToken(null)
-    router.push("/auth/login")
+    router.push("/auth/login?logout=true")
   }
 
   const updateUser = (userData: Partial<User>) => {

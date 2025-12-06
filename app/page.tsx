@@ -110,7 +110,7 @@ export default function Home() {
       <Navbar />
 
       {/* Hero Section */}
-      <section className="w-full relative pt-24">
+      <section className="w-full relative pt-16">
         <Carousel
           slides={carouselSlides}
           autoPlay

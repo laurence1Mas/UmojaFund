@@ -1,60 +1,85 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { connectDB } from '@/lib/db';
-import { User } from '@/lib/models/User';
-import { verifyToken, extractTokenFromHeader } from '@/lib/utils/jwt';
+import { NextRequest, NextResponse } from 'next/server'
+import { connectDB } from '@/lib/db'
+import { User } from '@/lib/models/User'
+import { verifyToken } from '@/lib/utils/jwt'
 
-export async function GET(request: NextRequest) {
+export async function GET(req: NextRequest) {
   try {
-    await connectDB();
+    const authHeader = req.headers.get('authorization')
     
-    // Extraire le token du header
-    const token = extractTokenFromHeader(request.headers.get('authorization'));
-    
-    if (!token) {
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
       return NextResponse.json(
-        { success: false, error: 'Token d\'authentification manquant' },
+        { success: false, error: 'Token manquant' },
         { status: 401 }
-      );
+      )
     }
-
-    // Vérifier le token
-    const payload = verifyToken(token);
     
-    // Trouver l'utilisateur
-    const user = await User.findById(payload.userId).select('-passwordHash');
+    const token = authHeader.split(' ')[1]
+    const decoded = verifyToken(token)
+    
+    if (!decoded) {
+      return NextResponse.json(
+        { success: false, error: 'Token invalide' },
+        { status: 401 }
+      )
+    }
+    
+    await connectDB()
+    
+    // Récupérer l'utilisateur avec les champs nécessaires
+    const user = await User.findById(decoded.userId).lean()
     
     if (!user) {
       return NextResponse.json(
         { success: false, error: 'Utilisateur non trouvé' },
         { status: 404 }
-      );
+      )
     }
-
+    
+    // Transformer l'objet user pour retourner les bonnes propriétés
+    const userResponse = {
+      id: user._id.toString(),
+      name: user.name,
+      email: user.email,
+      role: user.role,
+      walletAddress: user.walletAddress,
+      
+      // Profile fields
+      phone: user.phone,
+      bio: user.bio,
+      location: user.location,
+      website: user.website,
+      avatar: user.avatar,
+      
+      // Preferences
+      preferences: user.preferences,
+      
+      // Statistics
+      stats: user.stats,
+      
+      // Security
+      twoFactorEnabled: user.twoFactorEnabled,
+      
+      // Dates
+      createdAt: user.createdAt,
+      updatedAt: user.updatedAt,
+      lastPasswordChange: user.lastPasswordChange
+    }
+    
     return NextResponse.json({
       success: true,
-      user: {
-        id: user._id,
-        name: user.name,
-        email: user.email,
-        role: user.role,
-        walletAddress: user.walletAddress,
-        createdAt: user.createdAt,
-      },
-    });
-
+      user: userResponse
+    })
+    
   } catch (error: any) {
-    console.error('Get user profile error:', error);
-    
-    if (error.message === 'Token invalide ou expiré') {
-      return NextResponse.json(
-        { success: false, error: 'Token invalide ou expiré' },
-        { status: 401 }
-      );
-    }
-    
+    console.error('Error in auth/me:', error)
     return NextResponse.json(
-      { success: false, error: 'Erreur lors de la récupération du profil' },
+      { 
+        success: false, 
+        error: 'Erreur serveur',
+        details: process.env.NODE_ENV === 'development' ? error.message : undefined
+      },
       { status: 500 }
-    );
+    )
   }
 }

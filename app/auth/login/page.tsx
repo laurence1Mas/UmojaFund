@@ -52,24 +52,26 @@ export default function Login() {
   }
 
   const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-    setIsSubmitting(true)
-    setError(null)
-    setSuccess(null)
+  e.preventDefault()
+  setIsSubmitting(true)
+  setError(null)
+  setSuccess(null)
 
-    try {
-      const result = await login(formData.email, formData.password)
-      
-      if (!result.success) {
-        setError(result.message || "Échec de la connexion")
-      }
-    } catch (error) {
-      console.error("Login error:", error)
-      setError("Une erreur est survenue lors de la connexion")
-    } finally {
-      setIsSubmitting(false)
+  try {
+    const result = await login(formData.email, formData.password)
+    
+    if (!result.success) {
+      setError(result.message || "Échec de la connexion")
+    } else {
+      // Redirection est déjà gérée dans AuthContext
     }
+  } catch (error) {
+    console.error("Login error:", error)
+    setError("Une erreur est survenue lors de la connexion")
+  } finally {
+    setIsSubmitting(false)
   }
+}
 
   return (
     <div className="min-h-screen flex flex-col bg-gradient-to-b from-gray-50 to-white">

@@ -1,69 +1,111 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { connectDB } from '@/lib/db';
-import { User } from '@/lib/models/User';
-import { generateToken } from '@/lib/utils/jwt';
-import bcrypt from 'bcryptjs';
+import { NextRequest, NextResponse } from 'next/server'
+import { connectDB } from '@/lib/db'
+import { User } from '@/lib/models/User'
+import { generateToken } from '@/lib/utils/jwt'
+import bcrypt from 'bcryptjs'
 
-export async function POST(request: NextRequest) {
+export async function POST(req: NextRequest) {
   try {
-    await connectDB();
-    
-    const body = await request.json();
-    const { email, password } = body;
+    const { email, password } = await req.json()
 
-    // Validation
-    if (!email?.trim() || !password) {
+    if (!email || !password) {
       return NextResponse.json(
-        { success: false, error: 'Email et mot de passe sont requis' },
+        { success: false, error: 'Email et mot de passe requis' },
         { status: 400 }
-      );
+      )
     }
 
-    // Trouver l'utilisateur
-    const user = await User.findOne({ email: email.toLowerCase().trim() });
+    await connectDB()
+
+    // Chercher l'utilisateur
+    const user = await User.findOne({ email: email.toLowerCase() })
+
     if (!user) {
       return NextResponse.json(
-        { success: false, error: 'Email ou mot de passe incorrect' },
+        { success: false, error: 'Identifiants incorrects' },
         { status: 401 }
-      );
+      )
     }
 
-    // Vérifier le mot de passe MANUELLEMENT
-    const isValidPassword = await bcrypt.compare(password, user.passwordHash);
-    if (!isValidPassword) {
+    // Vérifier le mot de passe
+    const isPasswordValid = await bcrypt.compare(password, user.passwordHash)
+
+    if (!isPasswordValid) {
       return NextResponse.json(
-        { success: false, error: 'Email ou mot de passe incorrect' },
+        { success: false, error: 'Identifiants incorrects' },
         { status: 401 }
-      );
+      )
     }
 
-    // Générer le token JWT
+    // Vérifier si le compte est verrouillé
+    if (user.accountLockedUntil && user.accountLockedUntil > new Date()) {
+      return NextResponse.json(
+        { 
+          success: false, 
+          error: 'Compte temporairement verrouillé. Veuillez réessayer plus tard.' 
+        },
+        { status: 403 }
+      )
+    }
+
+    // Réinitialiser les tentatives de connexion échouées
+    user.failedLoginAttempts = 0
+    user.accountLockedUntil = undefined
+    await user.save()
+
+    // Générer le token
     const token = generateToken({
       userId: user._id.toString(),
       email: user.email,
+      role: user.role
+    })
+
+    // Préparer la réponse utilisateur
+    const userResponse = {
+      id: user._id.toString(),
+      name: user.name,
+      email: user.email,
       role: user.role,
-    });
+      walletAddress: user.walletAddress,
+      
+      // Profile fields
+      phone: user.phone,
+      bio: user.bio,
+      location: user.location,
+      website: user.website,
+      avatar: user.avatar,
+      
+      // Preferences
+      preferences: user.preferences,
+      
+      // Statistics
+      stats: user.stats,
+      
+      // Security
+      twoFactorEnabled: user.twoFactorEnabled,
+      
+      // Dates
+      createdAt: user.createdAt,
+      updatedAt: user.updatedAt,
+      lastPasswordChange: user.lastPasswordChange
+    }
 
     return NextResponse.json({
       success: true,
       message: 'Connexion réussie',
       token,
-      user: {
-        id: user._id,
-        name: user.name,
-        email: user.email,
-        role: user.role,
-        walletAddress: user.walletAddress,
-        createdAt: user.createdAt,
-      },
-    });
+      user: userResponse
+    })
 
   } catch (error: any) {
-    console.error('Login error:', error);
-    
+    console.error('Login error:', error)
     return NextResponse.json(
-      { success: false, error: 'Une erreur est survenue lors de la connexion' },
+      { 
+        success: false, 
+        error: 'Erreur serveur',
+        details: process.env.NODE_ENV === 'development' ? error.message : undefined
+      },
       { status: 500 }
-    );
+    )
   }
 }
