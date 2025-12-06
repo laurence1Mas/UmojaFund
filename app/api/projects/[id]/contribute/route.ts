@@ -47,7 +47,7 @@ export async function POST(request: NextRequest, context: RouteContext) {
       );
     }
     
-    if (project.status !== 'published') {
+    if (project.status !== 'active') {
       return NextResponse.json(
         { 
           success: false,

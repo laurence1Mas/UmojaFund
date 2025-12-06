@@ -9,7 +9,7 @@ export async function GET(request: NextRequest) {
     await connectDB();
     
     const { searchParams } = new URL(request.url);
-    const status = searchParams.get('status') || 'published';
+    const status = searchParams.get('status') || 'active';
     const limit = parseInt(searchParams.get('limit') || '10');
     const page = parseInt(searchParams.get('page') || '1');
     
