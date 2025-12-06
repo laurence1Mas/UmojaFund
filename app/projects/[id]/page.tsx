@@ -356,7 +356,12 @@ export default function ProjectDetailsPage() { // Renommé pour éviter les conf
                           <MessageSquare className="w-4 h-4" />
                           Copier le lien
                         </button>
-                        // Ajoutez ce bouton dans la section des actions
+                        
+                      </div>
+                    </div>
+                  )}
+                </button>
+                {/* // Ajoutez ce bouton dans la section des actions */}
 {user && (project.owner === user.id || project.creatorId === user.id || user.role === 'admin') && (
   <Link
     href={`/projects/${projectId}/reports`}
@@ -366,10 +371,6 @@ export default function ProjectDetailsPage() { // Renommé pour éviter les conf
     Voir les rapports
   </Link>
 )}
-                      </div>
-                    </div>
-                  )}
-                </button>
               </div>
             </div>
           </div>
