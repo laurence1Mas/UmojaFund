@@ -1,101 +1,193 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { connectDB } from '@/lib/db';
-import { Project } from '@/lib/models/Project';
+import { NextRequest, NextResponse } from 'next/server'
+import { connectDB } from '@/lib/db'
+import { verifyToken } from '@/lib/utils/jwt'
+import mongoose from 'mongoose'
 
-interface RouteContext {
-  params: Promise<{ id: string }>;
-}
-
-export async function POST(request: NextRequest, context: RouteContext) {
+export async function POST(
+  req: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
   try {
-    await connectDB();
+    const { id: projectId } = await params
     
-    const { id } = await context.params;
+    console.log('Approving project:', projectId)
     
-    console.log(`✅ Approbation du projet: ${id}`);
+    // Vérifier l'authentification
+    const authHeader = req.headers.get('authorization')
+    if (!authHeader) {
+      return NextResponse.json(
+        { success: false, error: 'Non autorisé' },
+        { status: 401 }
+      )
+    }
     
-    const project = await Project.findById(id);
+    const token = authHeader.startsWith('Bearer ') 
+      ? authHeader.split(' ')[1] 
+      : authHeader
     
+    const decoded = verifyToken(token)
+    if (!decoded || (decoded.role !== 'admin' && decoded.role !== 'superadmin')) {
+      return NextResponse.json(
+        { success: false, error: 'Accès refusé. Admin uniquement' },
+        { status: 403 }
+      )
+    }
+
+    // Lire le corps de la requête avec gestion d'erreur
+    let body = {}
+    try {
+      const text = await req.text()
+      if (text) {
+        body = JSON.parse(text)
+      }
+    } catch (e) {
+      console.log('No body or invalid JSON, using empty object')
+    }
+
+    const { reviewedBy, notes } = body as any
+
+    // Connexion à la base de données
+    await connectDB()
+
+    // Vérifier si c'est un ID mock
+    if (projectId.startsWith('mock-')) {
+      console.log('Mock project approval')
+      
+      return NextResponse.json({
+        success: true,
+        message: 'Projet approuvé avec succès (simulation)',
+        data: {
+          project: {
+            id: projectId,
+            status: 'active',
+            verified: true,
+            startDate: new Date().toISOString(),
+            endDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
+            reviewedBy: reviewedBy || decoded.email || 'Admin',
+            reviewedAt: new Date().toISOString(),
+            updatedAt: new Date().toISOString()
+          }
+        }
+      })
+    }
+
+    // Pour les vrais projets MongoDB
+    const db = mongoose.connection.db
+    if (!db) {
+      throw new Error('Database not connected')
+    }
+
+    const projectsCollection = db.collection('projects')
+    
+    // Trouver le projet
+    const project = await projectsCollection.findOne({
+      _id: new mongoose.Types.ObjectId(projectId)
+    })
+
     if (!project) {
       return NextResponse.json(
-        { 
-          success: false,
-          error: 'Projet non trouvé' 
-        },
+        { success: false, error: 'Projet non trouvé' },
         { status: 404 }
-      );
+      )
     }
-    
-    console.log(`📋 Projet trouvé: ${project.title}, status: ${project.status}`);
-    
-    // Passer de draft/pending à published
-    if (project.status !== 'draft' && project.status !== 'pending') {
+
+    console.log('Current project status:', project.status)
+
+    // Vérifier que le projet peut être approuvé
+    if (project.status !== 'pending' && project.status !== 'draft') {
       return NextResponse.json(
         { 
-          success: false,
-          error: `Le projet est déjà en statut: ${project.status}` 
+          success: false, 
+          error: `Le projet ne peut pas être approuvé. Statut actuel: ${project.status}` 
         },
         { status: 400 }
-      );
+      )
+    }
+
+    // Préparer la mise à jour
+    const updateData: any = {
+      status: 'active',
+      verified: true,
+      updatedAt: new Date(),
+      reviewedBy: reviewedBy || decoded.email || 'Admin',
+      reviewedAt: new Date()
+    }
+
+    // Migration des champs si nécessaire
+    if (project.goalADA && !project.fundingGoal) {
+      updateData.fundingGoal = project.goalADA
     }
     
-    // S'assurer que les champs requis ont des valeurs par défaut
-    if (!project.imageUrl) {
-      project.imageUrl = 'https://images.unsplash.com/photo-1551288049-bebda4e38f71?w=1200&h=630&fit=crop';
+    if (project.raisedADA !== undefined && !project.fundedAmount) {
+      updateData.fundedAmount = project.raisedADA
     }
     
-    if (!project.pdfUrl) {
-      project.pdfUrl = 'https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf';
+    if (project.deadline && !project.endDate) {
+      updateData.endDate = project.deadline
     }
     
-    project.status = 'published';
-    
-    console.log(`💾 Sauvegarde du projet...`);
-    await project.save();
-    
-    console.log(`✅ Projet sauvegardé avec succès`);
-    
-    await project.populate('owner', 'name email');
-    
+    if (!project.startDate) {
+      updateData.startDate = new Date()
+    }
+
+    if (notes) {
+      updateData.reviewNotes = notes
+    }
+
+    console.log('Updating project with:', updateData)
+
+    // Mettre à jour le projet
+    const result = await projectsCollection.updateOne(
+      { _id: new mongoose.Types.ObjectId(projectId) },
+      { $set: updateData }
+    )
+
+    console.log('Update result:', result)
+
+    if (result.modifiedCount === 0) {
+      return NextResponse.json(
+        { success: false, error: 'Aucune modification apportée' },
+        { status: 400 }
+      )
+    }
+
+    // Récupérer le projet mis à jour
+    const updatedProject = await projectsCollection.findOne({
+      _id: new mongoose.Types.ObjectId(projectId)
+    })
+
     return NextResponse.json({
       success: true,
-      message: 'Projet approuvé et publié avec succès',
+      message: 'Projet approuvé avec succès',
       data: {
-        id: project._id,
-        title: project.title,
-        status: project.status,
-        imageUrl: project.imageUrl,
-        pdfUrl: project.pdfUrl,
-        updatedAt: project.updatedAt,
-      },
-    });
+        project: {
+          id: updatedProject._id.toString(),
+          title: updatedProject.title,
+          status: updatedProject.status,
+          verified: updatedProject.verified,
+          startDate: updatedProject.startDate || updatedProject.createdAt,
+          endDate: updatedProject.endDate || updatedProject.deadline,
+          reviewedBy: updatedProject.reviewedBy,
+          reviewedAt: updatedProject.reviewedAt,
+          updatedAt: updatedProject.updatedAt,
+          // Anciens champs pour compatibilité
+          goalADA: updatedProject.goalADA,
+          raisedADA: updatedProject.raisedADA,
+          deadline: updatedProject.deadline
+        }
+      }
+    })
 
   } catch (error: any) {
-    console.error('❌ Approve project error:', error);
-    console.error('Error name:', error.name);
-    console.error('Error message:', error.message);
-    
-    if (error.name === 'ValidationError') {
-      const errors = Object.values(error.errors).map((err: any) => err.message);
-      console.error('Validation errors:', errors);
-      
-      return NextResponse.json(
-        { 
-          success: false,
-          error: `Erreur de validation: ${errors.join(', ')}`,
-          details: errors
-        },
-        { status: 400 }
-      );
-    }
+    console.error('Error approving project:', error)
     
     return NextResponse.json(
       { 
-        success: false,
-        error: 'Erreur lors de l\'approbation du projet',
-        details: error.message
+        success: false, 
+        error: 'Erreur serveur',
+        details: process.env.NODE_ENV === 'development' ? error.message : undefined
       },
       { status: 500 }
-    );
+    )
   }
 }

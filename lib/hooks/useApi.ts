@@ -18,6 +18,8 @@ interface ApiResponse<T = any> {
   message?: string
   error?: string
   timestamp?: string
+  missingFields?: string[] // Ajout pour les champs manquants
+  validationErrors?: Record<string, string> // Ajout pour les erreurs de validation
 }
 
 export function useApi() {
@@ -66,6 +68,19 @@ export function useApi() {
         data = await response.json()
       } catch (parseError) {
         throw new Error('Invalid response from server')
+      }
+
+      // Ne pas throw d'erreur pour les 400 (validation), mais retourner la réponse
+      if (response.status === 400 || response.status === 422) {
+        // C'est une erreur de validation, on retourne simplement la réponse
+        return {
+          success: false,
+          data: data.data,
+          error: data.error,
+          message: data.message,
+          missingFields: data.missingFields,
+          validationErrors: data.validationErrors
+        }
       }
 
       if (!response.ok) {

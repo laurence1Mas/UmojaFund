@@ -52,7 +52,7 @@ async function seedDatabase() {
         raisedADA: 12500,
         deadline: new Date(Date.now() + 60 * 24 * 60 * 60 * 1000), // 60 jours
         owner: user1._id,
-        status: 'published',
+        status: 'active',
       },
       {
         title: 'Atelier de Couture pour Femmes',
@@ -63,7 +63,7 @@ async function seedDatabase() {
         raisedADA: 8000,
         deadline: new Date(Date.now() + 45 * 24 * 60 * 60 * 1000),
         owner: user2._id,
-        status: 'published',
+        status: 'active',
       },
       {
         title: 'Centre de Santé Mobile',
