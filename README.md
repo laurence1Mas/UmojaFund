@@ -157,7 +157,7 @@ Stockage des contributions
 Libération/résolution automatique
 13. Technologies recommandées
 lien github du projet 
-https://github.com/Marcellin3
+(https://github.com/laurence1Mas/UmojaFund)
 Côté
 Technologies
 Frontend
