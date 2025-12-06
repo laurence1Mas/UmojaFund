@@ -1,55 +1,67 @@
 import mongoose from 'mongoose';
-import { IUser } from './User';
-
-export interface ITeamMember {
-  name: string;
-  role: string;
-  experience?: string;
-}
-
-export interface IRisk {
-  description: string;
-  mitigation: string;
-}
-
-export interface ITimelinePhase {
-  phase: string;
-  duration: string;
-  activities: string[];
-}
 
 export interface IProject extends mongoose.Document {
-  // Champs de base
   title: string;
   description: string;
-  imageUrl?: string;
-  pdfUrl?: string;
-  goalADA: number;
-  raisedADA: number;
-  deadline: Date;
-  owner: mongoose.Types.ObjectId | IUser;
-  status: 'draft' | 'pending' | 'published' | 'rejected' | 'funded';
-  smartContractAddress?: string;
+  shortDescription: string;
+  category: string;
   
-  // Champs supplémentaires pour détail
-  category?: string;
-  location?: string;
-  durationMonths?: number;
-  beneficiaries?: number; // Nombre de bénéficiaires
-  jobsCreated?: number; // Emplois créés
+  owner: mongoose.Types.ObjectId;
+  creatorId: mongoose.Types.ObjectId;
+  creatorName: string;
   
-  // Équipe, risques, planning
-  team?: ITeamMember[];
-  risks?: IRisk[];
-  timeline?: ITimelinePhase[];
+  fundingGoal: number;
+  fundedAmount: number;
+  currency: string;
   
-  // Métadonnées
-  tags?: string[];
-  socialMedia?: {
-    website?: string;
-    twitter?: string;
-    linkedin?: string;
-  };
+  status: 'draft' | 'pending' | 'active' | 'completed' | 'cancelled' | 'failed';
+  
+  // Timeline
+  startDate: Date;
+  endDate: Date;
+  duration: number;
+  
+  // Investment details
+  minInvestment: number;
+  maxInvestment?: number;
+  expectedROI: number;
+  
+  // Media
+  images: string[];
+  videoUrl?: string;
+  
+  // Content
+  story: string;
+  risks: string;
+  updates: Array<{
+    title: string;
+    content: string;
+    date: Date;
+    images?: string[];
+  }>;
+  
+  // Statistics
+  backersCount: number;
+  investors: Array<{
+    userId: mongoose.Types.ObjectId;
+    amount: number;
+    date: Date;
+    returns?: number;
+  }>;
+  
+  // Milestones
+  milestones: Array<{
+    title: string;
+    description: string;
+    amountRequired: number;
+    completionDate?: Date;
+    status: 'pending' | 'in-progress' | 'completed';
+  }>;
+  
+  // Metadata
+  tags: string[];
+  featured: boolean;
+  verified: boolean;
   
   createdAt: Date;
   updatedAt: Date;
@@ -59,146 +71,162 @@ const ProjectSchema = new mongoose.Schema<IProject>(
   {
     title: {
       type: String,
-      required: [true, 'Le titre est requis'],
+      required: true,
       trim: true,
-      maxlength: [120, 'Le titre ne peut pas dépasser 120 caractères'],
+      minlength: 5,
+      maxlength: 100,
+    },
+    owner: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'User',
+        required: true
     },
     description: {
       type: String,
-      required: [true, 'La description est requise'],
-      maxlength: [10000, 'La description ne peut pas dépasser 10,000 caractères'],
+      required: true,
+      trim: true,
+      minlength: 50,
+      maxlength: 5000,
     },
-    imageUrl: {
+    shortDescription: {
       type: String,
-      default: 'https://images.unsplash.com/photo-1551288049-bebda4e38f71?w=1200&h=630&fit=crop',
+      required: true,
+      trim: true,
+      maxlength: 200,
     },
-    pdfUrl: {
+    category: {
       type: String,
-      default: 'https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf',
+      required: true,
+      enum: ['environment', 'education', 'technology', 'health', 'agriculture', 'energy', 'community', 'arts', 'other'],
     },
-    goalADA: {
-      type: Number,
-      required: [true, 'Le objectif en ADA est requis'],
-      min: [10, 'Le objectif minimum est 10 ADA'],
-    },
-    raisedADA: {
-      type: Number,
-      default: 0,
-      min: 0,
-    },
-    deadline: {
-      type: Date,
-      required: [true, 'La date limite est requise'],
-    },
-    owner: {
+    
+    creatorId: {
       type: mongoose.Schema.Types.ObjectId,
       ref: 'User',
       required: true,
     },
-    status: {
+    creatorName: {
       type: String,
-      enum: ['draft', 'pending', 'published', 'rejected', 'funded'],
-      default: 'draft',
-    },
-    smartContractAddress: {
-      type: String,
-      trim: true,
+      required: true,
     },
     
-    // Champs supplémentaires
-    category: {
-      type: String,
-      trim: true,
-      enum: [
-        'agriculture', 
-        'éducation', 
-        'santé', 
-        'technologie', 
-        'infrastructure', 
-        'énergie', 
-        'eau', 
-        'environnement',
-        'art-culture',
-        'sport',
-        'autre'
-      ],
-    },
-    location: {
-      type: String,
-      trim: true,
-    },
-    durationMonths: {
+    fundingGoal: {
       type: Number,
-      min: 1,
-      max: 60,
-    },
-    beneficiaries: {
-      type: Number,
+      required: true,
       min: 1,
     },
-    jobsCreated: {
+    fundedAmount: {
       type: Number,
+      default: 0,
+      min: 0,
+    },
+    currency: {
+      type: String,
+      default: 'ADA',
+      enum: ['ADA', 'USD', 'EUR', 'GBP', 'JPY'],
+    },
+    
+    status: {
+      type: String,
+      required: true,
+      enum: ['draft', 'pending', 'active', 'completed', 'cancelled', 'failed'],
+      default: 'draft',
+    },
+    
+    // Timeline
+    startDate: {
+      type: Date,
+      required: true,
+    },
+    endDate: {
+      type: Date,
+      required: true,
+    },
+    duration: {
+      type: Number,
+      required: true,
+      min: 1,
+    },
+    
+    // Investment details
+    minInvestment: {
+      type: Number,
+      required: true,
+      min: 1,
+    },
+    maxInvestment: {
+      type: Number,
+    },
+    expectedROI: {
+      type: Number,
+      required: true,
       min: 0,
     },
     
-    // Structures complexes
-    team: [{
-      name: { 
-        type: String, 
-        required: [true, 'Le nom du membre est requis'],
-        trim: true,
-      },
-      role: { 
-        type: String, 
-        required: [true, 'Le rôle est requis'],
-        trim: true,
-      },
-      experience: { 
+    // Media
+    images: [{
+      type: String,
+      trim: true,
+    }],
+    videoUrl: {
+      type: String,
+      trim: true,
+    },
+    
+    // Content
+    story: {
+      type: String,
+      required: true,
+    },
+    risks: {
+      type: String,
+      required: true,
+    },
+    updates: [{
+      title: String,
+      content: String,
+      date: Date,
+      images: [String],
+    }],
+    
+    // Statistics
+    backersCount: {
+      type: Number,
+      default: 0,
+      min: 0,
+    },
+    investors: [{
+      userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
+      amount: Number,
+      date: Date,
+      returns: Number,
+    }],
+    
+    // Milestones
+    milestones: [{
+      title: String,
+      description: String,
+      amountRequired: Number,
+      completionDate: Date,
+      status: {
         type: String,
-        trim: true,
+        enum: ['pending', 'in-progress', 'completed'],
+        default: 'pending',
       },
     }],
     
-    risks: [{
-      description: { 
-        type: String, 
-        required: [true, 'La description du risque est requise'],
-        trim: true,
-      },
-      mitigation: { 
-        type: String, 
-        required: [true, 'La mitigation est requise'],
-        trim: true,
-      },
-    }],
-    
-    timeline: [{
-      phase: { 
-        type: String, 
-        required: [true, 'La phase est requise'],
-        trim: true,
-      },
-      duration: { 
-        type: String, 
-        required: [true, 'La durée est requise'],
-        trim: true,
-      },
-      activities: [{ 
-        type: String,
-        trim: true,
-      }],
-    }],
-    
-    // Métadonnées
+    // Metadata
     tags: [{
       type: String,
       trim: true,
     }],
-    
-    socialMedia: {
-      website: { type: String, trim: true },
-      twitter: { type: String, trim: true },
-      linkedin: { type: String, trim: true },
+    featured: {
+      type: Boolean,
+      default: false,
+    },
+    verified: {
+      type: Boolean,
+      default: false,
     },
   },
   {
@@ -214,12 +242,12 @@ const ProjectSchema = new mongoose.Schema<IProject>(
   }
 );
 
-// Index pour les recherches
-ProjectSchema.index({ status: 1, deadline: 1 });
-ProjectSchema.index({ owner: 1 });
-ProjectSchema.index({ raisedADA: -1 });
-ProjectSchema.index({ category: 1 });
-ProjectSchema.index({ location: 1 });
-ProjectSchema.index({ tags: 1 });
+// Indexes
+ProjectSchema.index({ status: 1, endDate: 1 });
+ProjectSchema.index({ creatorId: 1, createdAt: -1 });
+ProjectSchema.index({ category: 1, status: 1 });
+ProjectSchema.index({ featured: 1, createdAt: -1 });
+ProjectSchema.index({ verified: 1, status: 1 });
+ProjectSchema.index({ 'investors.userId': 1 });
 
 export const Project = mongoose.models.Project || mongoose.model<IProject>('Project', ProjectSchema);

@@ -52,6 +52,7 @@ export async function GET(request: NextRequest) {
 }
 
 // POST: Créer un projet (JSON seulement)
+// POST: Créer un projet (JSON seulement)
 export async function POST(request: NextRequest) {
   console.log('🚀 Create project endpoint called');
   
@@ -71,35 +72,77 @@ export async function POST(request: NextRequest) {
     
     // Parser le body
     const body = await request.json();
-    console.log('📦 Body received:', body);
+    console.log('📦 Body received:', JSON.stringify(body, null, 2));
     
-    const { title, description, goalADA, deadline } = body;
+    // Extraction de tous les champs nécessaires
+    const { 
+      title, 
+      shortDescription, 
+      description, 
+      story,
+      category,
+      fundingGoal,
+      minInvestment,
+      expectedROI,
+      startDate,
+      endDate,
+      duration,
+      deadline,
+      imageUrl,
+      pdfUrl,
+      location,
+      beneficiaries,
+      jobsCreated,
+      team,
+      risks,
+      timeline,
+      tags,
+      socialMedia
+    } = body;
 
-    // Validation
-    if (!title?.trim()) {
+    console.log('📊 Debug - category:', category);
+    console.log('📊 Debug - shortDescription length:', shortDescription?.length);
+
+    // Validation des champs obligatoires
+    const requiredFields = [
+      'title', 'shortDescription', 'description', 'story', 'category',
+      'fundingGoal', 'minInvestment', 'expectedROI', 'startDate', 'endDate',
+      'duration'
+    ];
+    
+    const missingFields = requiredFields.filter(field => !body[field]);
+    
+    if (missingFields.length > 0) {
       return NextResponse.json(
-        { success: false, error: 'Le titre est requis' },
+        { 
+          success: false, 
+          error: `Champs manquants : ${missingFields.join(', ')}` 
+        },
         { status: 400 }
       );
     }
     
-    if (!description?.trim()) {
+    if (fundingGoal < 10) {
       return NextResponse.json(
-        { success: false, error: 'La description est requise' },
+        { success: false, error: 'L\'objectif minimum est 10 ADA' },
         { status: 400 }
       );
     }
     
-    if (!goalADA || goalADA < 10) {
+    if (minInvestment < 10) {
       return NextResponse.json(
-        { success: false, error: 'Le objectif minimum est 10 ADA' },
+        { success: false, error: 'L\'investissement minimum est 10 ADA' },
         { status: 400 }
       );
     }
-    
-    if (!deadline) {
+
+    // Valider shortDescription length
+    if (shortDescription && shortDescription.length > 200) {
       return NextResponse.json(
-        { success: false, error: 'La date limite est requise' },
+        { 
+          success: false, 
+          error: 'La description courte ne doit pas dépasser 200 caractères' 
+        },
         { status: 400 }
       );
     }
@@ -112,15 +155,71 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Créer le projet avec valeurs par défaut
+    // Convertir la catégorie française en anglais si nécessaire
+    const categoryMap: {[key: string]: string} = {
+      'éducation': 'education',
+      'education': 'education',
+      'environnement': 'environment',
+      'technologie': 'technology',
+      'santé': 'health',
+      'agriculture': 'agriculture',
+      'énergie': 'energy',
+      'communauté': 'community',
+      'arts': 'arts',
+      'autre': 'other'
+    };
+
+    const validCategory = categoryMap[category.toLowerCase()] || 'other';
+    
+    // Convertir risks en string si c'est un tableau
+    let risksString = '';
+    if (Array.isArray(risks)) {
+      risksString = risks.map(risk => 
+        `${risk.description || risk}: ${risk.mitigation || ''}`
+      ).join('; ');
+    } else if (typeof risks === 'string') {
+      risksString = risks;
+    }
+
+    // Créer le projet avec tous les champs
     const project = new Project({
       title: title.trim(),
+      shortDescription: shortDescription.substring(0, 200).trim(), // Limiter à 200 caractères
       description: description.trim(),
-      goalADA,
+      story: story.trim(),
+      category: validCategory,
+      creatorId: body.creatorId || payload.userId, // Prendre du body ou du token
+      creatorName: body.creatorName || 'Unknown',
+      fundingGoal,
+      goalADA: fundingGoal, // Pour compatibilité
+      minInvestment,
+      expectedROI,
+      startDate: new Date(startDate),
+      endDate: new Date(endDate),
+      duration,
       deadline: deadlineDate,
-      owner: payload.userId, // Utiliser l'ID du token
+      imageUrl: imageUrl || 'https://images.unsplash.com/photo-1551288049-bebda4e38f71?w=1200&h=630&fit=crop',
+      pdfUrl: pdfUrl || 'https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf',
+      location: location || '',
+      beneficiaries: beneficiaries || 0,
+      jobsCreated: jobsCreated || 0,
+      owner: payload.userId,
       status: 'draft',
-      // imageUrl et pdfUrl auront les valeurs par défaut du modèle
+      raisedADA: 0,
+      backersCount: 0,
+      fundedAmount: 0,
+      currency: 'ADA',
+      images: [],
+      tags: tags || [],
+      featured: false,
+      verified: false,
+      team: team || [],
+      risks: risksString, // Convertir en string
+      timeline: timeline || [],
+      socialMedia: socialMedia || {},
+      updates: [],
+      investors: [],
+      milestones: []
     });
 
     console.log('💾 Saving project...');
@@ -160,7 +259,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json(
       { 
         success: false,
-        error: 'Erreur lors de la création du projet' 
+        error: error.message || 'Erreur lors de la création du projet' 
       },
       { status: 500 }
     );
