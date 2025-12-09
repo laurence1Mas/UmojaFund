@@ -7,6 +7,7 @@ import { ArrowRight, Search, Filter, Clock, Users, TrendingUp, DollarSign, Eye, 
 import { useMemo, useState, useEffect } from "react"
 import { useApi } from "@/lib/hooks/useApi"
 import { useAuth } from "@/lib/contexts/AuthContext"
+import { useRouter } from "next/navigation"
 
 interface Project {
   id: string
@@ -78,6 +79,7 @@ const statusLabels: Record<string, string> = {
 export default function ProjectsPage() {
   const { fetchApi } = useApi()
   const { user, isAuthenticated } = useAuth()
+  const router = useRouter()
   const [projects, setProjects] = useState<Project[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -255,13 +257,8 @@ export default function ProjectsPage() {
 
   // Gérer le clic sur le bouton contribuer
   const handleContributeClick = (projectId: string) => {
-    if (!isAuthenticated) {
-      // Rediriger vers la page de connexion ou afficher une modal
-      window.location.href = '/auth/login?redirect=' + encodeURIComponent(`/projects/${projectId}`)
-      return
-    }
-    // Rediriger vers la page de contribution
-    window.location.href = `/projects/${projectId}/contribute`
+    // Rediriger vers la page de contribution - accessible à tous
+    router.push(`/projects/${projectId}/contribute`)
   }
 
   if (loading && projects.length === 0) {
@@ -373,33 +370,33 @@ export default function ProjectsPage() {
                       </div>
                     </div>
 
-                    {/* Category Filter */}
+                    {/* Category Filter - CORRECTION ICI */}
                     <div>
                       <select
-                        value={filters.category}
-                        onChange={(e) => handleFilterChange('category', e.target.value)}
-                        className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent"
-                      >
-                        <option value="all">Toutes les catégories</option>
-                        {categories.map(cat => (
-                          <option key={cat.value} value={cat.value}>
-                            {cat.label} ({cat.count})
-                          </option>
-                        ))}
-                      </select>
+  value={filters.category}
+  onChange={(e) => handleFilterChange('category', e.target.value)}
+  className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent"
+>
+  <option key="all" value="all">Toutes les catégories</option>
+  {categories.map(cat => (
+    <option key={cat.value} value={cat.value}>
+      {`${cat.label} (${cat.count})`}
+    </option>
+  ))}
+</select>
                     </div>
 
-                    {/* Sort */}
+                    {/* Sort - CORRECTION ICI */}
                     <div>
                       <select
                         value={filters.sortBy}
                         onChange={(e) => handleFilterChange('sortBy', e.target.value)}
                         className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent"
                       >
-                        <option value="createdAt">Plus récents</option>
-                        <option value="fundedAmount">Plus financés</option>
-                        <option value="backersCount">Plus populaires</option>
-                        <option value="fundingGoal">Montant élevé</option>
+                        <option key="createdAt" value="createdAt">Plus récents</option>
+                        <option key="fundedAmount" value="fundedAmount">Plus financés</option>
+                        <option key="backersCount" value="backersCount">Plus populaires</option>
+                        <option key="fundingGoal" value="fundingGoal">Montant élevé</option>
                       </select>
                     </div>
                   </div>
@@ -407,6 +404,7 @@ export default function ProjectsPage() {
                   {/* Status Filter Buttons */}
                   <div className="flex flex-wrap gap-2">
                     <button
+                      key="all"
                       onClick={() => handleFilterChange('status', 'all')}
                       className={`px-4 py-2 rounded-lg transition-colors ${
                         filters.status === 'all'
@@ -417,6 +415,7 @@ export default function ProjectsPage() {
                       Tous
                     </button>
                     <button
+                      key="active"
                       onClick={() => handleFilterChange('status', 'active')}
                       className={`px-4 py-2 rounded-lg transition-colors ${
                         filters.status === 'active'
@@ -427,6 +426,7 @@ export default function ProjectsPage() {
                       Actifs
                     </button>
                     <button
+                      key="pending"
                       onClick={() => handleFilterChange('status', 'pending')}
                       className={`px-4 py-2 rounded-lg transition-colors ${
                         filters.status === 'pending'
@@ -437,6 +437,7 @@ export default function ProjectsPage() {
                       En attente
                     </button>
                     <button
+                      key="completed"
                       onClick={() => handleFilterChange('status', 'completed')}
                       className={`px-4 py-2 rounded-lg transition-colors ${
                         filters.status === 'completed'
@@ -480,7 +481,7 @@ export default function ProjectsPage() {
                     
                     return (
                       <div
-                        key={project.id}
+                        key={project.id || project._id}
                         className="bg-white rounded-lg overflow-hidden shadow-sm transform transition duration-300 hover:shadow-lg hover:-translate-y-1 hover:scale-[1.02]"
                       >
                         {/* Project Image */}
@@ -501,18 +502,18 @@ export default function ProjectsPage() {
                           
                           {/* Badges overlay */}
                           <div className="absolute top-3 left-3 flex gap-2">
-                            <span className="text-xs bg-secondary/10 text-primary px-3 py-1 rounded-full">
+                            <span key="category" className="text-xs bg-secondary/10 text-primary px-3 py-1 rounded-full">
                               {categoryLabels[project.category] || project.category}
                             </span>
                             {project.featured && (
-                              <span className="text-xs bg-purple-100 text-purple-700 px-3 py-1 rounded-full">
+                              <span key="featured" className="text-xs bg-purple-100 text-purple-700 px-3 py-1 rounded-full">
                                 En vedette
                               </span>
                             )}
                           </div>
                           
                           {/* Status badge */}
-                          <span className="absolute top-3 right-3 text-xs bg-white/90 backdrop-blur-sm px-3 py-1 rounded-full">
+                          <span key="status" className="absolute top-3 right-3 text-xs bg-white/90 backdrop-blur-sm px-3 py-1 rounded-full">
                             {statusLabels[project.status]}
                           </span>
                         </div>
@@ -542,11 +543,11 @@ export default function ProjectsPage() {
                           
                           {/* Project Stats */}
                           <div className="flex items-center justify-between text-sm text-gray-600 mb-6">
-                            <div className="flex items-center gap-1">
+                            <div key="backers" className="flex items-center gap-1">
                               <Users className="w-4 h-4" />
                               <span>{project.backersCount} investisseurs</span>
                             </div>
-                            <div className="flex items-center gap-1">
+                            <div key="days" className="flex items-center gap-1">
                               <Clock className="w-4 h-4" />
                               <span>{daysLeft > 0 ? `${daysLeft} jours` : 'Terminé'}</span>
                             </div>
@@ -555,34 +556,26 @@ export default function ProjectsPage() {
                           {/* Action Buttons */}
                           <div className="flex gap-3">
                             <Link
-                              href={`/projects/${project.id}`}
+                              href={`/projects/${project.id || project._id}`}
                               className="flex-1 text-primary font-medium hover:text-primary/80 transition-colors inline-flex items-center justify-center gap-2 border border-primary px-4 py-2 rounded-lg"
                             >
                               <Eye size={16} />
                               Voir détails
                             </Link>
                             
-                            {/* Bouton Contribuer avec vérification de connexion */}
+                            {/* Bouton Contribuer - accessible à tous */}
                             {project.status === 'active' ? (
-                              isAuthenticated ? (
-                                <button
-                                  onClick={() => handleContributeClick(project.id)}
-                                  className="flex-1 bg-primary text-white px-4 py-2 rounded-lg font-medium hover:bg-primary/90 transition-colors inline-flex items-center justify-center gap-2"
-                                >
-                                  <Heart size={16} />
-                                  Contribuer
-                                </button>
-                              ) : (
-                                <Link
-                                  href={`/auth/login?redirect=${encodeURIComponent(`/projects/${project.id}`)}`}
-                                  className="flex-1 bg-primary text-white px-4 py-2 rounded-lg font-medium hover:bg-primary/90 transition-colors inline-flex items-center justify-center gap-2"
-                                >
-                                  <Heart size={16} />
-                                  Connectez-vous pour contribuer
-                                </Link>
-                              )
+                              <button
+                                key="contribute"
+                                onClick={() => handleContributeClick(project.id || project._id)}
+                                className="flex-1 bg-primary text-white px-4 py-2 rounded-lg font-medium hover:bg-primary/90 transition-colors inline-flex items-center justify-center gap-2"
+                              >
+                                <Heart size={16} />
+                                Contribuer
+                              </button>
                             ) : (
                               <button
+                                key="disabled"
                                 disabled
                                 className="flex-1 bg-gray-300 text-gray-500 px-4 py-2 rounded-lg font-medium cursor-not-allowed inline-flex items-center justify-center gap-2"
                               >
@@ -591,6 +584,15 @@ export default function ProjectsPage() {
                               </button>
                             )}
                           </div>
+                          
+                          {/* Message invitant à se connecter si non authentifié */}
+                          {!isAuthenticated && project.status === 'active' && (
+                            <div key="login-message" className="mt-3 text-center">
+                              <p className="text-xs text-gray-500">
+                                Vous devrez vous connecter pour finaliser votre contribution
+                              </p>
+                            </div>
+                          )}
                         </div>
                       </div>
                     )
@@ -627,6 +629,7 @@ export default function ProjectsPage() {
                   <div className="mt-10 flex items-center justify-center">
                     <nav className="inline-flex -space-x-px rounded-md shadow-sm" aria-label="Pagination">
                       <button
+                        key="prev"
                         onClick={() => handlePageChange(pagination.page - 1)}
                         disabled={pagination.page === 1}
                         className="px-4 py-2 bg-white border text-sm text-gray-700 rounded-l-md hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
@@ -641,7 +644,7 @@ export default function ProjectsPage() {
                           </span>
                         ) : (
                           <button
-                            key={pageNumber}
+                            key={`page-${pageNumber}`}
                             onClick={() => handlePageChange(pageNumber as number)}
                             className={`px-4 py-2 bg-white border text-sm ${
                               pagination.page === pageNumber
@@ -655,6 +658,7 @@ export default function ProjectsPage() {
                       ))}
                       
                       <button
+                        key="next"
                         onClick={() => handlePageChange(pagination.page + 1)}
                         disabled={pagination.page === pagination.pages}
                         className="px-4 py-2 bg-white border text-sm text-gray-700 rounded-r-md hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
@@ -678,7 +682,7 @@ export default function ProjectsPage() {
                       </h4>
                       <div className="space-y-3">
                         {featuredProjects.map((project) => (
-                          <Link key={project.id} href={`/projects/${project.id}`} className="flex items-center gap-3 group">
+                          <Link key={`featured-${project.id || project._id}`} href={`/projects/${project.id || project._id}`} className="flex items-center gap-3 group">
                             <div className="w-12 h-12 bg-gradient-to-br from-primary/20 to-secondary/20 rounded-lg flex items-center justify-center flex-shrink-0">
                               <span className="text-primary font-bold text-sm">
                                 {project.title.charAt(0).toUpperCase()}
@@ -707,7 +711,7 @@ export default function ProjectsPage() {
                       </h4>
                       <div className="space-y-3">
                         {recentProjects.map((project) => (
-                          <Link key={project.id} href={`/projects/${project.id}`} className="flex items-center gap-3 group">
+                          <Link key={`recent-${project.id || project._id}`} href={`/projects/${project.id || project._id}`} className="flex items-center gap-3 group">
                             <div className="w-12 h-12 bg-gradient-to-br from-primary/20 to-secondary/20 rounded-lg flex items-center justify-center flex-shrink-0">
                               <span className="text-primary font-bold text-sm">
                                 {project.title.charAt(0).toUpperCase()}
@@ -733,7 +737,7 @@ export default function ProjectsPage() {
                     <div className="space-y-2">
                       {categories.map((cat) => (
                         <button
-                          key={cat.value}
+                          key={`cat-${cat.value}`}
                           onClick={() => handleFilterChange('category', cat.value)}
                           className={`w-full flex items-center justify-between px-3 py-2 rounded-lg transition-colors ${
                             filters.category === cat.value
@@ -754,15 +758,15 @@ export default function ProjectsPage() {
                   <div className="bg-gradient-to-r from-primary to-secondary rounded-lg p-5 text-white">
                     <h4 className="font-semibold mb-4">Statistiques rapides</h4>
                     <div className="space-y-3">
-                      <div className="flex items-center justify-between">
+                      <div key="projects-displayed" className="flex items-center justify-between">
                         <span className="text-sm opacity-90">Projets affichés</span>
                         <span className="font-bold">{projects.length}</span>
                       </div>
-                      <div className="flex items-center justify-between">
+                      <div key="current-page" className="flex items-center justify-between">
                         <span className="text-sm opacity-90">Page actuelle</span>
                         <span className="font-bold">{pagination.page}/{pagination.pages}</span>
                       </div>
-                      <div className="flex items-center justify-between">
+                      <div key="total-projects" className="flex items-center justify-between">
                         <span className="text-sm opacity-90">Total projets</span>
                         <span className="font-bold">{pagination.total}</span>
                       </div>
@@ -783,6 +787,30 @@ export default function ProjectsPage() {
                       <ArrowRight className="w-4 h-4" />
                     </Link>
                   </div>
+                  
+                  {/* CTA pour se connecter si non authentifié */}
+                  {!isAuthenticated && (
+                    <div className="bg-gradient-to-br from-blue-50 to-indigo-50 border border-blue-100 rounded-lg p-5">
+                      <h4 className="font-semibold text-blue-900 mb-3">Connectez-vous</h4>
+                      <p className="text-sm text-blue-800 mb-4">
+                        Créez un compte pour contribuer aux projets et suivre vos investissements
+                      </p>
+                      <div className="space-y-2">
+                        <Link
+                          href="/auth/login"
+                          className="w-full inline-flex items-center justify-center gap-2 bg-blue-600 text-white px-4 py-2.5 rounded-lg font-medium hover:bg-blue-700"
+                        >
+                          Se connecter
+                        </Link>
+                        <Link
+                          href="/auth/register"
+                          className="w-full inline-flex items-center justify-center gap-2 border border-blue-600 text-blue-600 px-4 py-2.5 rounded-lg font-medium hover:bg-blue-50"
+                        >
+                          Créer un compte
+                        </Link>
+                      </div>
+                    </div>
+                  )}
                 </div>
               </aside>
             </div>
