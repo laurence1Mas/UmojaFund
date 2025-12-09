@@ -3,9 +3,11 @@
 import Link from "next/link"
 import { useState } from "react"
 import { Menu, X } from "lucide-react"
+import { useAuth } from "@/lib/contexts/AuthContext"
 
 export function Navbar() {
   const [isOpen, setIsOpen] = useState(false)
+  const { user, logout } = useAuth()
 
   const navLinks = [
     { href: "/", label: "Home" },
@@ -36,15 +38,34 @@ export function Navbar() {
 
           {/* Auth Buttons */}
           <div className="hidden md:flex items-center space-x-4">
-            <Link href="/auth/login" className="text-primary hover:text-primary/80 font-medium transition-colors">
-              Login
-            </Link>
-            <Link
-              href="/auth/register"
-              className="bg-primary text-white px-4 py-2 rounded-lg hover:bg-primary/90 transition-colors font-medium"
-            >
-              Sign Up
-            </Link>
+            {user ? (
+              <>
+                <Link
+                  href="/dashboard"
+                  className="text-gray-700 hover:text-primary font-medium transition-colors"
+                >
+                  Dashboard
+                </Link>
+                <button
+                  onClick={logout}
+                  className="bg-red-500 text-white px-4 py-2 rounded-lg hover:bg-red-600 transition-colors font-medium"
+                >
+                  Logout
+                </button>
+              </>
+            ) : (
+              <>
+                <Link href="/auth/login" className="text-primary hover:text-primary/80 font-medium transition-colors">
+                  Login
+                </Link>
+                <Link
+                  href="/auth/register"
+                  className="bg-primary text-white px-4 py-2 rounded-lg hover:bg-primary/90 transition-colors font-medium"
+                >
+                  Sign Up
+                </Link>
+              </>
+            )}
           </div>
 
           {/* Mobile menu button */}
@@ -61,16 +82,33 @@ export function Navbar() {
                 {link.label}
               </Link>
             ))}
+            
             <div className="border-t border-gray-200 pt-4 space-y-2">
-              <Link href="/auth/login" className="block text-primary font-medium py-2">
-                Login
-              </Link>
-              <Link
-                href="/auth/register"
-                className="block bg-primary text-white px-4 py-2 rounded-lg text-center font-medium"
-              >
-                Sign Up
-              </Link>
+              {user ? (
+                <>
+                  <Link href="/dashboard" className="block text-primary font-medium py-2">
+                    Dashboard
+                  </Link>
+                  <button
+                    onClick={logout}
+                    className="block w-full bg-red-500 text-white px-4 py-2 rounded-lg text-center font-medium"
+                  >
+                    Logout
+                  </button>
+                </>
+              ) : (
+                <>
+                  <Link href="/auth/login" className="block text-primary font-medium py-2">
+                    Login
+                  </Link>
+                  <Link
+                    href="/auth/register"
+                    className="block bg-primary text-white px-4 py-2 rounded-lg text-center font-medium"
+                  >
+                    Sign Up
+                  </Link>
+                </>
+              )}
             </div>
           </div>
         )}

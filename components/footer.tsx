@@ -1,8 +1,44 @@
 import Link from "next/link"
+import { Heart } from "lucide-react"
 
 export function Footer() {
+  const currentYear = new Date().getFullYear()
+
   return (
-    <footer className="bg-gray-900 text-white py-12">
+    <footer className="bg-gray-900 text-white pb-12">
+      {/* Newsletter Section - Join Our Community */}
+      <div className="bg-gradient-to-r from-primary/10 to-secondary/10 border-b border-gray-800 mb-8">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+          <div className="max-w-3xl mx-auto text-center">
+            <div className="flex justify-center mb-4">
+              <Heart className="w-10 h-10 text-primary" />
+            </div>
+            <h3 className="text-xl font-bold mb-3">Join Our Community</h3>
+            <p className="text-gray-300 mb-6">
+              Subscribe to our newsletter and be the first to know about new projects and updates.
+            </p>
+            <form className="flex flex-col sm:flex-row gap-3 max-w-md mx-auto">
+              <input
+                type="email"
+                placeholder="Your email address"
+                className="flex-1 px-4 py-2 rounded-lg bg-gray-800 border border-gray-700 focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent text-white placeholder-gray-400 text-sm"
+                aria-label="Email for newsletter subscription"
+              />
+              <button
+                type="submit"
+                className="px-6 py-2 bg-primary hover:bg-primary/90 text-white font-medium rounded-lg transition-colors"
+              >
+                Subscribe
+              </button>
+            </form>
+            <p className="text-xs text-gray-500 mt-3">
+              By subscribing, you agree to our Privacy Policy. Unsubscribe anytime.
+            </p>
+          </div>
+        </div>
+      </div>
+
+      {/* Original Footer Content */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="grid md:grid-cols-4 gap-8 mb-8">
           {/* Brand */}
@@ -102,7 +138,7 @@ export function Footer() {
 
         <div className="border-t border-gray-800 pt-8">
           <div className="flex flex-col md:flex-row justify-between items-center text-gray-400 text-sm">
-            <p>&copy; 2025 UmojaFund. All rights reserved.</p>
+            <p>&copy; {currentYear} UmojaFund. All rights reserved.</p>
             <div className="flex space-x-6 mt-4 md:mt-0">
               <a href="#" className="hover:text-white transition-colors">
                 Twitter

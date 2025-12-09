@@ -1,3 +1,4 @@
+"use client"
 import { Navbar } from "@/components/navbar"
 import { Footer } from "@/components/footer"
 import { CheckCircle } from "lucide-react"
