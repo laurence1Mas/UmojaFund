@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { connectDB} from '@/lib/db'
-import Project from '@lib/models/Project'
-import { verifyToken } from '@lib/utils/jwt'
+import {Project} from './../../../../../lib/models/Project'
+import { verifyToken } from './../../../../../lib/utils/jwt'
 import mongoose from 'mongoose'
 
 export async function PUT(request: NextRequest) {

@@ -1,4 +1,4 @@
-import mongoose from 'mongoose';
+import mongoose, { Schema } from 'mongoose';
 import bcrypt from 'bcryptjs';
 
 export interface IUser extends mongoose.Document {
@@ -7,15 +7,13 @@ export interface IUser extends mongoose.Document {
   passwordHash: string;
   walletAddress?: string;
   role: 'user' | 'admin';
-  
-  // Profile fields
+
   phone?: string;
   bio?: string;
   location?: string;
   website?: string;
   avatar?: string;
-  
-  // Preferences
+
   preferences?: {
     language: string;
     currency: string;
@@ -31,8 +29,7 @@ export interface IUser extends mongoose.Document {
       push: boolean;
     };
   };
-  
-  // Statistics (cached for performance)
+
   stats?: {
     totalFunded: number;
     activeProjects: number;
@@ -42,108 +39,82 @@ export interface IUser extends mongoose.Document {
     pendingReturns: number;
     lastUpdated: Date;
   };
-  
-  // Security
+
   twoFactorEnabled?: boolean;
   lastPasswordChange?: Date;
   failedLoginAttempts?: number;
   accountLockedUntil?: Date;
-  
+
   createdAt: Date;
   updatedAt: Date;
+
   comparePassword(candidatePassword: string): Promise<boolean>;
+  updateStats(newStats: Partial<IUser['stats']>): Promise<void>;
 }
 
-const UserSchema = new mongoose.Schema<IUser>(
+const UserSchema = new Schema<IUser>(
   {
     name: {
       type: String,
-      required: [true, 'Le nom est requis'],
+      required: true,
       trim: true,
-      minlength: [2, 'Le nom doit contenir au moins 2 caractères'],
+      minlength: 2,
     },
+
     email: {
       type: String,
-      required: [true, "L'email est requis"],
+      required: true,
       unique: true,
       lowercase: true,
       trim: true,
-      match: [/^\S+@\S+\.\S+$/, 'Veuillez fournir un email valide'],
+      match: [/^\S+@\S+\.\S+$/, 'Email invalide'],
     },
+
     passwordHash: {
       type: String,
-      required: [true, 'Le mot de passe est requis'],
+      required: true,
     },
+
     walletAddress: {
       type: String,
       trim: true,
     },
+
     role: {
       type: String,
       enum: ['user', 'admin'],
       default: 'user',
     },
-    
-    // Profile fields
-    phone: {
-      type: String,
-      trim: true,
-    },
-    bio: {
-      type: String,
-      trim: true,
-      maxlength: [500, 'La bio ne peut pas dépasser 500 caractères'],
-    },
-    location: {
-      type: String,
-      trim: true,
-    },
-    website: {
-      type: String,
-      trim: true,
-    },
-    avatar: {
-      type: String,
-      trim: true,
-    },
-    
+
+    // Profile
+    phone: { type: String, trim: true },
+    bio: { type: String, trim: true, maxlength: 500 },
+    location: { type: String, trim: true },
+    website: { type: String, trim: true },
+    avatar: { type: String, trim: true },
+
     // Preferences
     preferences: {
-      language: {
-        type: String,
-        default: 'en',
-        enum: ['en', 'fr', 'es', 'de', 'pt'],
-      },
-      currency: {
-        type: String,
-        default: 'ADA',
-        enum: ['ADA', 'USD', 'EUR', 'GBP', 'JPY'],
-      },
-      timezone: {
-        type: String,
-        default: 'UTC',
-      },
-      theme: {
-        type: String,
-        default: 'system',
-        enum: ['light', 'dark', 'system'],
-      },
+      language: { type: String, default: 'en', enum: ['en', 'fr', 'es', 'de', 'pt'] },
+      currency: { type: String, default: 'ADA', enum: ['ADA', 'USD', 'EUR', 'GBP', 'JPY'] },
+      timezone: { type: String, default: 'UTC' },
+      theme: { type: String, default: 'system', enum: ['light', 'dark', 'system'] },
       dateFormat: {
         type: String,
         default: 'MM/DD/YYYY',
         enum: ['MM/DD/YYYY', 'DD/MM/YYYY', 'YYYY-MM-DD'],
       },
       notifications: {
-        email: { type: Boolean, default: true },
-        projectUpdates: { type: Boolean, default: true },
-        fundingAlerts: { type: Boolean, default: true },
-        weeklyDigest: { type: Boolean, default: false },
-        marketingEmails: { type: Boolean, default: false },
-        push: { type: Boolean, default: true },
+        email: { default: true, type: Boolean },
+        projectUpdates: { default: true, type: Boolean },
+        fundingAlerts: { default: true, type: Boolean },
+        weeklyDigest: { default: false, type: Boolean },
+        marketingEmails: { default: false, type: Boolean },
+        push: { default: true, type: Boolean },
       },
     },
-    
-    // Statistics
+
+    // Stats
     stats: {
       totalFunded: { type: Number, default: 0 },
       activeProjects: { type: Number, default: 0 },
@@ -153,28 +124,17 @@ const UserSchema = new mongoose.Schema<IUser>(
       pendingReturns: { type: Number, default: 0 },
       lastUpdated: { type: Date, default: Date.now },
     },
-    
+
     // Security
-    twoFactorEnabled: {
-      type: Boolean,
-      default: false,
-    },
-    lastPasswordChange: {
-      type: Date,
-      default: Date.now,
-    },
-    failedLoginAttempts: {
-      type: Number,
-      default: 0,
-      min: 0,
-    },
-    accountLockedUntil: {
-      type: Date,
-    },
+    twoFactorEnabled: { type: Boolean, default: false },
+    lastPasswordChange: { type: Date, default: Date.now },
+    failedLoginAttempts: { type: Number, default: 0, min: 0 },
+    accountLockedUntil: { type: Date },
   },
   {
     timestamps: true,
     toJSON: {
+      virtuals: true,
       transform: function (doc, ret) {
         delete ret.passwordHash;
         delete ret.__v;
@@ -186,23 +146,29 @@ const UserSchema = new mongoose.Schema<IUser>(
   }
 );
 
-// Méthode pour comparer les mots de passe
-UserSchema.methods.comparePassword = async function (candidatePassword: string): Promise<boolean> {
+// Compare password
+UserSchema.methods.comparePassword = async function (
+  candidatePassword: string
+): Promise<boolean> {
   try {
     return await bcrypt.compare(candidatePassword, this.passwordHash);
-  } catch (error) {
+  } catch {
     return false;
   }
 };
 
-// Méthode pour mettre à jour les stats
-UserSchema.methods.updateStats = async function (newStats: Partial<IUser['stats']>) {
+// Update user stats
+UserSchema.methods.updateStats = async function (
+  newStats: Partial<IUser['stats']>
+) {
   this.stats = {
     ...this.stats,
     ...newStats,
     lastUpdated: new Date(),
   };
+
   await this.save();
 };
 
-export const User = mongoose.models.User || mongoose.model<IUser>('User', UserSchema);
+export const User =
+  mongoose.models.User || mongoose.model<IUser>('User', UserSchema);
