@@ -58,7 +58,7 @@ export async function POST(request: NextRequest, context: RouteContext) {
     }
     
     // Vérifier si la campagne n'est pas terminée
-    if (project.deadline < new Date()) {
+    if (project.endDate < new Date()) {
       return NextResponse.json(
         { 
           success: false,
@@ -86,7 +86,7 @@ export async function POST(request: NextRequest, context: RouteContext) {
         await contribution.save();
         
         // Mettre à jour le montant collecté
-        project.raisedADA = (project.raisedADA || 0) + amountADA;
+        project.fundedAmount = (project.fundedAmount || 0) + amountADA;
         await project.save();
         
         console.log(`✅ Contribution ${contribution._id} confirmée pour le projet ${project._id}`);
