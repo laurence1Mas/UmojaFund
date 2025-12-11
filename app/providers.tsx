@@ -2,6 +2,8 @@
 
 import { createContext, useContext, useState, type ReactNode } from "react"
 import { translations, type Language } from "@/lib/i18n"
+import { AuthProvider } from "@/lib/contexts/AuthContext"
+import { ThemeProvider } from "@/components/theme-provider"
 
 interface LanguageContextType {
   language: Language
@@ -15,9 +17,18 @@ export function Providers({ children }: { children: ReactNode }) {
   const [language, setLanguage] = useState<Language>("en")
 
   return (
-    <LanguageContext.Provider value={{ language, setLanguage, t: translations[language] }}>
-      {children}
-    </LanguageContext.Provider>
+    <AuthProvider> {/* Ajout d'AuthProvider */}
+      <ThemeProvider
+        attribute="class"
+        defaultTheme="light"
+        enableSystem
+        disableTransitionOnChange
+      >
+        <LanguageContext.Provider value={{ language, setLanguage, t: translations[language] }}>
+          {children}
+        </LanguageContext.Provider>
+      </ThemeProvider>
+    </AuthProvider>
   )
 }
 
