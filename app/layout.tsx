@@ -5,6 +5,7 @@ import { Analytics } from "@vercel/analytics/next"
 import { ThemeProvider } from "@/components/theme-provider"
 import { AuthProvider } from "@/lib/contexts/AuthContext"
 import "./globals.css"
+import { Providers } from "./providers"
 
 const geist = Geist({ subsets: ["latin"] })
 const geistMono = Geist_Mono({ subsets: ["latin"] })
@@ -23,8 +24,8 @@ export const metadata: Metadata = {
         media: "(prefers-color-scheme: dark)",
       },
       {
-        url: "/icon.svg",
-        type: "image/svg+xml",
+        url: "/umoja.PNG",
+        type: "image",
       },
     ],
     apple: "/logo.png",
@@ -37,7 +38,7 @@ export const metadata: Metadata = {
     siteName: "UmojaFund",
     images: [
       {
-        url: "/logo.png",
+        url: "/umoja.PNG",
         width: 1200,
         height: 630,
         alt: "UmojaFund Logo",
@@ -48,7 +49,7 @@ export const metadata: Metadata = {
     card: "summary_large_image",
     title: "UmojaFund - Plateforme de Crowdfunding",
     description: "Autonomisez les communautés grâce au financement collaboratif.",
-    images: ["/logo.png"],
+    images: ["/umoja.PNG"],
   },
 }
 
@@ -57,19 +58,12 @@ export default function RootLayout({
 }: Readonly<{
   children: React.ReactNode
 }>) {
+
+
   return (
     <html lang="en" suppressHydrationWarning>
       <body className={`${geist.className} antialiased`}>
-        <ThemeProvider
-          attribute="class"
-          defaultTheme="light"
-          enableSystem
-          disableTransitionOnChange
-        >
-          <AuthProvider>
-            {children}
-          </AuthProvider>
-        </ThemeProvider>
+        <Providers>{children}</Providers>
         <Analytics />
       </body>
     </html>
