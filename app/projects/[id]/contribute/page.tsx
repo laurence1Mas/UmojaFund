@@ -28,15 +28,18 @@ interface Project {
   shortDescription: string
   category: string
   creatorName: string
-  creatorAddress: string
-  goalADA: number
-  raisedADA: number
+  creatorAddress?: string
+  fundingGoal: number
+  fundedAmount: number
   status: 'draft' | 'pending' | 'active' | 'completed' | 'cancelled' | 'failed'
-  deadline: string
+  startDate: string      // ✅ ajouté
+  endDate: string        // ✅ au lieu de endDate
   images: string[]
   verified: boolean
   backersCount: number
   createdAt: string
+  minInvestment: number  // ✅ nécessaire pour le formulaire
+  expectedROI: number    // ✅
 }
 
 interface CheckoutData {
@@ -133,24 +136,26 @@ export default function ContributePage() {
     if (!project) return false
     if (project.status !== 'active') return false
     
-    const deadline = new Date(project.deadline)
+    const endDate = new Date(project.endDate)
     const now = new Date()
-    return deadline > now
+    return endDate > now
   }
-  
   // Calculer les jours restants
   const getDaysLeft = () => {
-    if (!project) return 0
-    const deadline = new Date(project.deadline)
-    const now = new Date()
-    const diffTime = deadline.getTime() - now.getTime()
-    return Math.max(0, Math.ceil(diffTime / (1000 * 60 * 60 * 24)))
-  }
+  if (!project?.endDate) return 0
+  const endDate = new Date(project.endDate)
+  const now = new Date()
+  if (isNaN(endDate.getTime())) return 0 // Sécurité
+  const diffTime = endDate.getTime() - now.getTime()
+  const days = Math.ceil(diffTime / (1000 * 60 * 60 * 24))
+  return Math.max(0, days)
+}
   
   // Calculer la progression
   const getProgressPercentage = () => {
-    if (!project || project.goalADA === 0) return 0
-    return Math.min(100, (project.raisedADA / project.goalADA) * 100)
+const current = project?.fundedAmount || 0
+const goal = project?.fundingGoal || 1
+return Math.min(100, (current / goal) * 100)
   }
   
   // Formater l'argent
@@ -395,14 +400,14 @@ export default function ContributePage() {
                 <div className="text-right">
                   <div className="text-sm text-gray-600">Collecté</div>
                   <div className="text-xl font-bold text-primary">
-                    {formatADA(project.raisedADA)}
+                    {formatADA(project.fundedAmount)}
                   </div>
                 </div>
                 <div className="h-12 w-px bg-gray-300"></div>
                 <div className="text-right">
                   <div className="text-sm text-gray-600">Objectif</div>
                   <div className="text-xl font-bold text-gray-900">
-                    {formatADA(project.goalADA)}
+                    {formatADA(project.fundingGoal)}
                   </div>
                 </div>
               </div>
@@ -429,8 +434,8 @@ export default function ContributePage() {
                   />
                 </div>
                 <div className="flex justify-between text-sm text-gray-600">
-                  <span>Collecté : {formatADA(project.raisedADA)}</span>
-                  <span>Objectif : {formatADA(project.goalADA)}</span>
+                  <span>Collecté : {formatADA(project.fundedAmount)}</span>
+                  <span>Objectif : {formatADA(project.fundingGoal)}</span>
                 </div>
               </div>
               
@@ -462,7 +467,7 @@ export default function ContributePage() {
                       </div>
                       <div>
                         <div className="font-medium">Date limite</div>
-                        <div className="text-sm text-gray-600">{formatDate(project.deadline)}</div>
+                        <div className="text-sm text-gray-600">{formatDate(project.endDate)}</div>
                       </div>
                     </div>
                     <div className="text-right">
