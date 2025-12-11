@@ -1,46 +1,32 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { connectDB } from '@/lib/db';
-import { Project } from '@/lib/models/Project';
 import { verifyToken, extractTokenFromHeader } from '@/lib/utils/jwt';
 
-// GET: Liste des projets
+import { Project, User } from '@/lib/models'; 
+
 export async function GET(request: NextRequest) {
   try {
     await connectDB();
-    
+
     const { searchParams } = new URL(request.url);
     const status = searchParams.get('status') || 'active';
-    const limit = parseInt(searchParams.get('limit') || '10');
-    const page = parseInt(searchParams.get('page') || '1');
-    
+
     const filter: any = { status };
-    
-    // Pagination
-    const skip = (page - 1) * limit;
-    
-    const [projects, total] = await Promise.all([
-      Project.find(filter)
-        .populate('owner', 'name email')
-        .sort({ createdAt: -1 })
-        .skip(skip)
-        .limit(limit),
-      Project.countDocuments(filter),
-    ]);
-    
+
+    // On récupère tous les projets
+    const projects = await Project.find(filter)
+      .populate('owner', 'name email') // Safe car User est importé via index.ts
+      .sort({ createdAt: -1 });
+
     return NextResponse.json({
       success: true,
       data: projects,
-      pagination: {
-        page,
-        limit,
-        total,
-        pages: Math.ceil(total / limit),
-      },
+      total: projects.length
     });
 
   } catch (error: any) {
     console.error('Get projects error:', error);
-    
+
     return NextResponse.json(
       { 
         success: false,
@@ -51,7 +37,6 @@ export async function GET(request: NextRequest) {
   }
 }
 
-// POST: Créer un projet (JSON seulement)
 // POST: Créer un projet (JSON seulement)
 export async function POST(request: NextRequest) {
   console.log('🚀 Create project endpoint called');

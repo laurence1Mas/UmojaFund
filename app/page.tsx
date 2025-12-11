@@ -1,4 +1,4 @@
-"use client"
+"use client";
 
 import Link from "next/link"
 import { Navbar } from "@/components/navbar"
@@ -222,6 +222,82 @@ export default function Home() {
           </div>
         </div>
       </section>
+      {/* How It Works Section – TIMELINE */}
+<section className="py-20 bg-linear-60 from-white to-muted">
+  <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+    <h2 className="text-3xl md:text-4xl font-bold text-center mb-16">
+      How It Works
+    </h2>
+
+    <div className="relative">
+      {/* Ligne horizontale */}
+      <div className="absolute top-1/2 left-0 w-full h-1 bg-primary/30 transform -translate-y-1/2"></div>
+
+      {/* Steps */}
+      <div className="grid grid-cols-4 relative">
+        {steps.map((step, index) => {
+          const isEven = (index + 1) % 2 === 0
+
+          return (
+            <div
+              key={index}
+              className={`flex flex-col items-center text-center relative transition-all duration-300 
+                hover:scale-105 hover:text-primary hover:drop-shadow-lg hover:bg-white hover:p-4 hover:rounded-2xl animate-[float_3s_ease-in-out_infinite]
+                ${isEven ? "mb-20" : "mt-20"}
+              `}
+            >
+              {/* Ligne verticale */}
+              <div
+                className={`absolute w-1 bg-primary ${
+                  isEven ? "bottom-0 h-20" : "top-0 h-20"
+                }`}
+              />
+
+              {/* Contenu texte + numéro */}
+              {isEven ? (
+                // PAIRS → Contenu en haut, numéro en bas
+                <>
+                  <div className="max-w-[160px] mb-8">
+                    <h3 className="text-lg font-bold mb-1 text-primary">{step.title}</h3>
+                    <p className="text-gray-600 text-sm">{step.description}</p>
+                  </div>
+
+                  <div className="w-12 h-12 bg-primary text-white rounded-full flex items-center justify-center font-bold text-lg z-10 shadow-md">
+                    {step.number}
+                  </div>
+                </>
+              ) : (
+                // IMPAIRS → Numéro en haut, contenu en bas
+                <>
+                  <div className="w-12 h-12 bg-primary text-white rounded-full flex items-center justify-center font-bold text-lg z-10 shadow-md mb-8">
+                    {step.number}
+                  </div>
+
+                  <div className="max-w-[160px]">
+                    <h3 className="text-lg font-bold mb-1 text-primary">{step.title}</h3>
+                    <p className="text-gray-600 text-sm">{step.description}</p>
+                  </div>
+                </>
+              )}
+            </div>
+          )
+        })}
+      </div>
+    </div>
+  </div>
+</section>
+
+<style jsx>{`
+  @keyframes float {
+    0%, 100% {
+      transform: translateY(0);
+    }
+    50% {
+      transform: translateY(-6px);
+    }
+  }
+`}</style>
+
 
       <Footer />
     </div>
