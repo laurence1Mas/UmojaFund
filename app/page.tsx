@@ -1,35 +1,35 @@
-"use client"
+"use client";
 
 import Link from "next/link"
 import { Navbar } from "@/components/navbar"
 import { Footer } from "@/components/footer"
 import { Carousel } from "@/components/carousel"
 import { Heart, TrendingUp, Users, ArrowRight } from "lucide-react"
+import { useLanguage } from "@/hooks/use-language"
 
 export default function Home() {
+  const { t } = useLanguage()
+
   const carouselSlides = [
     {
       image: "/slide-1.png",
-      title: "Empower Communities, Fund Innovation",
-      description:
-        "Join thousands of people supporting innovative projects and creating positive change in their communities.",
-      buttonText: "Explore Projects",
+      title: t.home.carouselSlide1Title,
+      description: t.home.carouselSlide1Desc,
+      buttonText: t.home.exploreProjects,
       buttonLink: "/projects",
     },
     {
       image: "/slide-2.png",
-      title: "Support Bold Ideas",
-      description:
-        "Be part of the movement that turns great ideas into reality through community-powered funding.",
-      buttonText: "Start a Project",
+      title: t.home.carouselSlide2Title,
+      description: t.home.carouselSlide2Desc,
+      buttonText: t.home.startFunding,
       buttonLink: "/auth/register",
     },
     {
       image: "/slide-3.jpg",
-      title: "Create Global Impact",
-      description:
-        "Your contribution has the power to create lasting change across the globe.",
-      buttonText: "Browse Projects",
+      title: t.home.carouselSlide3Title,
+      description: t.home.carouselSlide3Desc,
+      buttonText: t.home.exploreProjects,
       buttonLink: "/projects",
     },
   ]
@@ -37,18 +37,18 @@ export default function Home() {
   const values = [
     {
       icon: Heart,
-      title: "Community First",
-      description: "We believe in the power of communities coming together to create positive change.",
+      title: t.home.communityFirst,
+      description: t.home.communityDesc,
     },
     {
       icon: TrendingUp,
-      title: "Sustainable Growth",
-      description: "Supporting projects that create lasting impact and sustainable development.",
+      title: t.home.sustainableGrowth,
+      description: t.home.sustainableDesc,
     },
     {
       icon: Users,
-      title: "Transparency",
-      description: "Complete transparency in all transactions and project updates.",
+      title: t.home.transparency,
+      description: t.home.transparencyDesc,
     },
   ]
 
@@ -85,23 +85,23 @@ export default function Home() {
   const steps = [
     {
       number: "1",
-      title: "Create a Project",
-      description: "Share your idea and set your funding goal.",
+      title: t.home.step1,
+      description: t.home.step1Desc,
     },
     {
       number: "2",
-      title: "Share Your Vision",
-      description: "Tell the world why your project matters.",
+      title: t.home.step2,
+      description: t.home.step2Desc,
     },
     {
       number: "3",
-      title: "Get Support",
-      description: "Receive funding from our community.",
+      title: t.home.step3,
+      description: t.home.step3Desc,
     },
     {
       number: "4",
-      title: "Make an Impact",
-      description: "Bring your project to life and create change.",
+      title: t.home.step4,
+      description: t.home.step4Desc,
     },
   ]
 
@@ -124,21 +124,18 @@ export default function Home() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="grid md:grid-cols-2 gap-12 items-center">
             <div>
-              <h2 className="text-3xl md:text-4xl font-bold mb-4">Welcome to UmojaFund</h2>
+              <h2 className="text-3xl md:text-4xl font-bold mb-4">{t.home.aboutTitle}</h2>
               <p className="text-gray-600 mb-4">
-                UmojaFund is a community-driven crowdfunding platform dedicated to empowering individuals and organizations
-                to bring their innovative projects to life. We believe in the power of collective action to create positive
-                change in communities around the world.
+                {t.home.aboutDesc}
               </p>
               <p className="text-gray-600">
-                Whether you're looking to launch a new initiative, support a cause, or connect with like-minded individuals,
-                UmojaFund provides the tools and resources you need to succeed.
+                {t.home.aboutDesc2}
               </p>
             </div>
             <div>
               <img
-                src="/about-hero.png"
-                alt="About UmojaFund"
+                src="/logo-img.png"
+                alt={t.home.aboutTitle}
                 className="w-full h-auto rounded-lg shadow-sm"
               />
             </div>
@@ -149,7 +146,7 @@ export default function Home() {
       {/* Our Values Section */}
       <section className="py-16 bg-muted">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <h2 className="text-3xl md:text-4xl font-bold text-center mb-12">Our Values</h2>
+          <h2 className="text-3xl md:text-4xl font-bold text-center mb-12">{t.home.valuesTitle}</h2>
           <div className="grid md:grid-cols-3 gap-8">
             {values.map((value, index) => {
               const Icon = value.icon
@@ -168,7 +165,7 @@ export default function Home() {
       {/* Recent Projects Section */}
       <section className="py-16">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <h2 className="text-3xl md:text-4xl font-bold text-center mb-12">Recent Projects</h2>
+          <h2 className="text-3xl md:text-4xl font-bold text-center mb-12">{t.home.recentProjects}</h2>
           <div className="grid md:grid-cols-3 gap-8">
             {recentProjects.map((project) => (
               <div
@@ -199,7 +196,7 @@ export default function Home() {
                     href={`/projects/${project.id}`}
                     className="text-primary font-medium hover:text-primary/80 transition-colors inline-flex items-center gap-2"
                   >
-                    Learn More <ArrowRight size={16} />
+                    {t.home.learnMore} <ArrowRight size={16} />
                   </Link>
                 </div>
               </div>
@@ -211,7 +208,7 @@ export default function Home() {
       {/* How It Works Section */}
       <section className="py-16 bg-muted">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <h2 className="text-3xl md:text-4xl font-bold text-center mb-12">How It Works</h2>
+          <h2 className="text-3xl md:text-4xl font-bold text-center mb-12">{t.home.howItWorks}</h2>
           <div className="grid md:grid-cols-4 gap-8">
             {steps.map((step, index) => (
               <div key={index} className="text-center">
@@ -225,8 +222,85 @@ export default function Home() {
           </div>
         </div>
       </section>
+      {/* How It Works Section – TIMELINE */}
+<section className="py-20 bg-linear-60 from-white to-muted">
+  <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+    <h2 className="text-3xl md:text-4xl font-bold text-center mb-16">
+      How It Works
+    </h2>
+
+    <div className="relative">
+      {/* Ligne horizontale */}
+      <div className="absolute top-1/2 left-0 w-full h-1 bg-primary/30 transform -translate-y-1/2"></div>
+
+      {/* Steps */}
+      <div className="grid grid-cols-4 relative">
+        {steps.map((step, index) => {
+          const isEven = (index + 1) % 2 === 0
+
+          return (
+            <div
+              key={index}
+              className={`flex flex-col items-center text-center relative transition-all duration-300 
+                hover:scale-105 hover:text-primary hover:drop-shadow-lg hover:bg-white hover:p-4 hover:rounded-2xl animate-[float_3s_ease-in-out_infinite]
+                ${isEven ? "mb-20" : "mt-20"}
+              `}
+            >
+              {/* Ligne verticale */}
+              <div
+                className={`absolute w-1 bg-primary ${
+                  isEven ? "bottom-0 h-20" : "top-0 h-20"
+                }`}
+              />
+
+              {/* Contenu texte + numéro */}
+              {isEven ? (
+                // PAIRS → Contenu en haut, numéro en bas
+                <>
+                  <div className="max-w-[160px] mb-8">
+                    <h3 className="text-lg font-bold mb-1 text-primary">{step.title}</h3>
+                    <p className="text-gray-600 text-sm">{step.description}</p>
+                  </div>
+
+                  <div className="w-12 h-12 bg-primary text-white rounded-full flex items-center justify-center font-bold text-lg z-10 shadow-md">
+                    {step.number}
+                  </div>
+                </>
+              ) : (
+                // IMPAIRS → Numéro en haut, contenu en bas
+                <>
+                  <div className="w-12 h-12 bg-primary text-white rounded-full flex items-center justify-center font-bold text-lg z-10 shadow-md mb-8">
+                    {step.number}
+                  </div>
+
+                  <div className="max-w-[160px]">
+                    <h3 className="text-lg font-bold mb-1 text-primary">{step.title}</h3>
+                    <p className="text-gray-600 text-sm">{step.description}</p>
+                  </div>
+                </>
+              )}
+            </div>
+          )
+        })}
+      </div>
+    </div>
+  </div>
+</section>
+
+<style jsx>{`
+  @keyframes float {
+    0%, 100% {
+      transform: translateY(0);
+    }
+    50% {
+      transform: translateY(-6px);
+    }
+  }
+`}</style>
+
 
       <Footer />
     </div>
   )
 }
+
