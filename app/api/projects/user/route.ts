@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { connectDB } from '@/lib/db';
-import { Project } from '@/lib/models/Project'; // Assurez-vous que c'est le bon chemin
+import { Project } from '@/lib/models/Project';
+import { Contribution } from '@/lib/models/Contribution';
 import { verifyToken } from '@/lib/utils/jwt';
 import mongoose from 'mongoose';
 
@@ -32,7 +33,16 @@ export async function GET(request: NextRequest) {
     
     // Vérifier le token
     const decoded = verifyToken(token);
-    console.log('👤 User authenticated:', decoded.email);
+    const userId = decoded.userId;
+    
+    if (!userId) {
+      return NextResponse.json(
+        { success: false, error: 'ID utilisateur non trouvé' },
+        { status: 401 }
+      );
+    }
+    
+    console.log('👤 User authenticated:', decoded.email, 'ID:', userId);
     
     // 2. Connexion à la base de données
     await connectDB();
@@ -45,41 +55,59 @@ export async function GET(request: NextRequest) {
     const category = searchParams.get('category');
     const skip = (page - 1) * limit;
     
-    console.log('Query params:', { page, limit, status, category, userId: decoded.userId });
-    
-    // 4. Construire la requête
-    // OPTION A: Projets où l'utilisateur est créateur (owner/creator)
-    const queryAsCreator: any = {
-      $or: [
-        { creatorId: new mongoose.Types.ObjectId(decoded.userId) },
-        { owner: new mongoose.Types.ObjectId(decoded.userId) }
-      ]
-    };
-    
-    // OPTION B: Projets où l'utilisateur a investi
-    const queryAsInvestor: any = {
-      'investors.userId': new mongoose.Types.ObjectId(decoded.userId)
-    };
-    
-    if (status) {
-      queryAsCreator.status = status;
-      queryAsInvestor.status = status;
-    }
-    
-    if (category) {
-      queryAsCreator.category = category;
-      queryAsInvestor.category = category;
-    }
+    console.log('Query params:', { page, limit, status, category, userId });
     
     try {
-      // 5. Récupérer les projets (créateur + investisseur)
-      const [projectsAsCreator, projectsAsInvestor] = await Promise.all([
+      // 4. Récupérer les contributions de l'utilisateur
+      const userContributions = await Contribution.find({ 
+        user: new mongoose.Types.ObjectId(userId),
+        status: 'confirmed' // Seulement les contributions confirmées
+      })
+      .populate('project')
+      .lean();
+      
+      console.log(`📊 Found ${userContributions.length} contributions for user`);
+      
+      // 5. Récupérer les projets uniques de l'utilisateur
+      const projectIds = [...new Set(
+        userContributions
+          .map(c => c.project?._id?.toString())
+          .filter(Boolean) as string[]
+      )];
+      
+      console.log(`📊 Unique project IDs: ${projectIds.length}`);
+      
+      // 6. Construire la requête pour les projets (créateur + contributeur)
+      const queryAsCreator: any = {
+        $or: [
+          { creatorId: new mongoose.Types.ObjectId(userId) },
+          { owner: new mongoose.Types.ObjectId(userId) }
+        ]
+      };
+      
+      const queryAsContributor: any = {
+        _id: { $in: projectIds.map(id => new mongoose.Types.ObjectId(id)) }
+      };
+      
+      // Appliquer les filtres
+      if (status) {
+        queryAsCreator.status = status;
+        queryAsContributor.status = status;
+      }
+      
+      if (category) {
+        queryAsCreator.category = category;
+        queryAsContributor.category = category;
+      }
+      
+      // 7. Récupérer les projets (créateur + contributeur)
+      const [projectsAsCreator, projectsAsContributor] = await Promise.all([
         Project.find(queryAsCreator)
           .sort({ createdAt: -1 })
           .skip(skip)
           .limit(limit)
           .lean(),
-        Project.find(queryAsInvestor)
+        Project.find(queryAsContributor)
           .sort({ createdAt: -1 })
           .skip(skip)
           .limit(limit)
@@ -87,34 +115,34 @@ export async function GET(request: NextRequest) {
       ]);
       
       console.log(`📊 Found ${projectsAsCreator.length} projects as creator`);
-      console.log(`📊 Found ${projectsAsInvestor.length} projects as investor`);
+      console.log(`📊 Found ${projectsAsContributor.length} projects as contributor`);
       
-      // 6. Combiner et dédupliquer les projets
+      // 8. Combiner et dédupliquer les projets
       const allProjectsMap = new Map();
       
-      [...projectsAsCreator, ...projectsAsInvestor].forEach(project => {
+      [...projectsAsCreator, ...projectsAsContributor].forEach(project => {
         const projectId = project._id.toString();
         if (!allProjectsMap.has(projectId)) {
           allProjectsMap.set(projectId, {
             ...project,
-            userRole: projectsAsCreator.some(p => p._id.toString() === projectId) ? 'creator' : 'investor'
+            userRole: projectsAsCreator.some(p => p._id.toString() === projectId) ? 'creator' : 'contributor'
           });
         }
       });
       
       const allProjects = Array.from(allProjectsMap.values());
       
-      // 7. Formater les projets
+      // 9. Formater les projets avec les contributions
       const formattedProjects = allProjects.map(project => {
-        const userInvestment = project.investors?.find(
-          (inv: any) => inv.userId && inv.userId.toString() === decoded.userId
-        ) || null;
+        // Trouver toutes les contributions de l'utilisateur pour ce projet
+        const projectContributions = userContributions.filter(
+          c => c.project && c.project._id.toString() === project._id.toString()
+        );
         
-        // Calculer le ROI
-        let userROI = '0.0';
-        if (userInvestment && userInvestment.amount && userInvestment.amount > 0) {
-          userROI = ((userInvestment.returns || 0) / userInvestment.amount * 100).toFixed(1);
-        }
+        const totalContributed = projectContributions.reduce(
+          (sum, c) => sum + (c.amountADA || 0), 
+          0
+        );
         
         // Calculer le progrès
         const fundingGoal = project.fundingGoal || project.goalADA || 1;
@@ -128,6 +156,14 @@ export async function GET(request: NextRequest) {
           Math.ceil((new Date(endDate).getTime() - Date.now()) / (1000 * 60 * 60 * 24))
         );
         
+        // Calculer le ROI attendu
+        let expectedROI = project.expectedROI || 0;
+        let potentialReturns = 0;
+        
+        if (expectedROI > 0 && totalContributed > 0) {
+          potentialReturns = totalContributed * (expectedROI / 100);
+        }
+        
         return {
           id: project._id.toString(),
           _id: project._id.toString(),
@@ -139,7 +175,7 @@ export async function GET(request: NextRequest) {
           status: project.status || 'draft',
           verified: project.verified || false,
           featured: project.featured || false,
-          userRole: project.userRole, // 'creator' ou 'investor'
+          userRole: allProjectsMap.get(project._id.toString())?.userRole || 'contributor',
           
           // Funding info
           fundingGoal,
@@ -148,19 +184,22 @@ export async function GET(request: NextRequest) {
           backersCount: project.backersCount || 0,
           daysLeft,
           
-          // User investment (si investisseur)
-          userInvestment: userInvestment ? {
-            amount: userInvestment.amount || 0,
-            date: userInvestment.date || project.createdAt,
-            returns: userInvestment.returns || 0,
-            roi: `${userROI}%`,
+          // User contributions
+          userContribution: projectContributions.length > 0 ? {
+            totalAmount: totalContributed,
+            contributionsCount: projectContributions.length,
+            firstContributionDate: projectContributions[0]?.createdAt || new Date(),
+            lastContributionDate: projectContributions[projectContributions.length - 1]?.createdAt || new Date(),
+            expectedReturns: potentialReturns,
+            roi: `${expectedROI.toFixed(1)}%`,
           } : null,
           
           // Project details
           creatorName: project.creatorName || 'Inconnu',
+          creatorId: project.creatorId?.toString(),
           startDate: project.startDate,
           endDate: endDate,
-          expectedROI: project.expectedROI || 0,
+          expectedROI,
           minInvestment: project.minInvestment || 0,
           milestones: project.milestones?.length || 0,
           images: project.images || [],
@@ -170,20 +209,56 @@ export async function GET(request: NextRequest) {
         };
       });
       
-      // 8. Pagination
-      const [totalAsCreator, totalAsInvestor] = await Promise.all([
+      // 10. Pagination
+      const [totalAsCreator, totalAsContributor] = await Promise.all([
         Project.countDocuments(queryAsCreator),
-        Project.countDocuments(queryAsInvestor)
+        Project.countDocuments(queryAsContributor)
       ]);
       
       // Compter les projets uniques (sans duplication)
-      const total = await Project.countDocuments({
-        $or: [queryAsCreator, queryAsInvestor]
-      });
+      const uniqueQuery = {
+        $or: [
+          { 
+            $or: [
+              { creatorId: new mongoose.Types.ObjectId(userId) },
+              { owner: new mongoose.Types.ObjectId(userId) }
+            ] 
+          },
+          { 
+            _id: { $in: projectIds.map(id => new mongoose.Types.ObjectId(id)) } 
+          }
+        ]
+      };
+      
+      if (status) {
+        uniqueQuery.$or.forEach((condition: any) => {
+          condition.status = status;
+        });
+      }
+      
+      if (category) {
+        uniqueQuery.$or.forEach((condition: any) => {
+          condition.category = category;
+        });
+      }
+      
+      const total = await Project.countDocuments(uniqueQuery);
       
       console.log(`✅ Returning ${formattedProjects.length} projects to user`);
       
-      // 9. Retourner la réponse
+      // 11. Calculer le résumé
+      const activeProjects = formattedProjects.filter(p => p.status === 'active');
+      const completedProjects = formattedProjects.filter(p => p.status === 'completed');
+      
+      const totalContributed = formattedProjects
+        .filter(p => p.userContribution)
+        .reduce((sum, p) => sum + (p.userContribution?.totalAmount || 0), 0);
+      
+      const totalExpectedReturns = formattedProjects
+        .filter(p => p.userContribution)
+        .reduce((sum, p) => sum + (p.userContribution?.expectedReturns || 0), 0);
+      
+      // 12. Retourner la réponse
       return NextResponse.json({
         success: true,
         data: {
@@ -195,16 +270,13 @@ export async function GET(request: NextRequest) {
             totalPages: Math.ceil(total / limit),
           },
           summary: {
-            totalInvested: formattedProjects
-              .filter(p => p.userInvestment)
-              .reduce((sum, p) => sum + (p.userInvestment?.amount || 0), 0),
-            totalReturns: formattedProjects
-              .filter(p => p.userInvestment)
-              .reduce((sum, p) => sum + (p.userInvestment?.returns || 0), 0),
-            activeProjects: formattedProjects.filter(p => p.status === 'active').length,
-            completedProjects: formattedProjects.filter(p => p.status === 'completed').length,
+            totalContributed,
+            totalExpectedReturns,
+            activeProjects: activeProjects.length,
+            completedProjects: completedProjects.length,
+            totalContributions: userContributions.length,
             asCreator: totalAsCreator,
-            asInvestor: totalAsInvestor,
+            asContributor: totalAsContributor,
           },
         },
       });
@@ -219,13 +291,27 @@ export async function GET(request: NextRequest) {
       }
       
       const projectsCollection = db.collection('projects');
+      const contributionsCollection = db.collection('contributions');
       
-      // Simple requête pour l'utilisateur
+      // Trouver les contributions de l'utilisateur
+      const userContributions = await contributionsCollection.find({
+        user: new mongoose.Types.ObjectId(userId),
+        status: 'confirmed'
+      }).toArray();
+      
+      // Extraire les IDs de projets uniques
+      const projectIds = [...new Set(
+        userContributions
+          .map(c => c.project?.toString())
+          .filter(Boolean) as string[]
+      )];
+      
+      // Récupérer les projets
       const userProjects = await projectsCollection.find({
         $or: [
-          { creatorId: new mongoose.Types.ObjectId(decoded.userId) },
-          { owner: new mongoose.Types.ObjectId(decoded.userId) },
-          { 'investors.userId': new mongoose.Types.ObjectId(decoded.userId) }
+          { creatorId: new mongoose.Types.ObjectId(userId) },
+          { owner: new mongoose.Types.ObjectId(userId) },
+          { _id: { $in: projectIds.map(id => new mongoose.Types.ObjectId(id)) } }
         ]
       })
       .sort({ createdAt: -1 })
@@ -233,14 +319,31 @@ export async function GET(request: NextRequest) {
       .limit(limit)
       .toArray();
       
-      const formattedProjects = userProjects.map(project => ({
-        id: project._id.toString(),
-        title: project.title || 'Sans titre',
-        status: project.status || 'draft',
-        fundingGoal: project.fundingGoal || project.goalADA || 0,
-        fundedAmount: project.fundedAmount || project.raisedADA || 0,
-        createdAt: project.createdAt || new Date(),
-      }));
+      // Formater les projets simples
+      const formattedProjects = userProjects.map(project => {
+        // Calculer le total contribué pour ce projet
+        const projectContributions = userContributions.filter(
+          c => c.project?.toString() === project._id.toString()
+        );
+        
+        const totalContributed = projectContributions.reduce(
+          (sum, c) => sum + (c.amountADA || 0), 
+          0
+        );
+        
+        return {
+          id: project._id.toString(),
+          title: project.title || 'Sans titre',
+          status: project.status || 'draft',
+          fundingGoal: project.fundingGoal || project.goalADA || 0,
+          fundedAmount: project.fundedAmount || project.raisedADA || 0,
+          userContribution: projectContributions.length > 0 ? {
+            totalAmount: totalContributed,
+            contributionsCount: projectContributions.length
+          } : null,
+          createdAt: project.createdAt || new Date(),
+        };
+      });
       
       return NextResponse.json({
         success: true,
@@ -251,6 +354,15 @@ export async function GET(request: NextRequest) {
             limit,
             total: formattedProjects.length,
             totalPages: 1,
+          },
+          summary: {
+            totalContributed: userContributions.reduce((sum, c) => sum + (c.amountADA || 0), 0),
+            totalExpectedReturns: 0,
+            activeProjects: formattedProjects.filter(p => p.status === 'active').length,
+            completedProjects: formattedProjects.filter(p => p.status === 'completed').length,
+            totalContributions: userContributions.length,
+            asCreator: 0,
+            asContributor: 0,
           },
         },
       });
@@ -271,12 +383,13 @@ export async function GET(request: NextRequest) {
           totalPages: 0,
         },
         summary: {
-          totalInvested: 0,
-          totalReturns: 0,
+          totalContributed: 0,
+          totalExpectedReturns: 0,
           activeProjects: 0,
           completedProjects: 0,
+          totalContributions: 0,
           asCreator: 0,
-          asInvestor: 0,
+          asContributor: 0,
         },
       },
     });
