@@ -1,13 +1,17 @@
+"use client"
+
 import Link from "next/link"
+import { useLanguage } from "@/hooks/use-language"
 import { Heart } from "lucide-react"
 
 export function Footer() {
-  const currentYear = new Date().getFullYear()
+  const { t } = useLanguage()
 
   return (
-    <footer className="bg-gray-900 text-white pb-12">
+
+    <footer className="bg-gray-900 text-white py-12">
       {/* Newsletter Section - Join Our Community */}
-      <div className="bg-gradient-to-r from-primary/10 to-secondary/10 border-b border-gray-800 mb-8">
+      <div className=" w-auto bg-gradient-to-r from-primary/10 to-secondary/10 border-b border-gray-800 mb-8">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
           <div className="max-w-3xl mx-auto text-center">
             <div className="flex justify-center mb-4">
@@ -37,45 +41,42 @@ export function Footer() {
           </div>
         </div>
       </div>
-
-      {/* Original Footer Content */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        
         <div className="grid md:grid-cols-4 gap-8 mb-8">
           {/* Brand */}
           <div>
             <div className="flex items-center space-x-2 mb-4">
               <div className="w-8 h-8 bg-secondary rounded-lg flex items-center justify-center">
-                <span className="text-white font-bold">U</span>
+                <img src="/umoja.png" alt="" className="rounded-lg w-auto" />
               </div>
               <span className="font-bold text-lg">UmojaFund</span>
             </div>
-            <p className="text-gray-400 text-sm">
-              Empowering communities through collaborative funding and innovation.
-            </p>
+            <p className="text-gray-400 text-sm">{t.footer.brandDesc}</p>
           </div>
 
           {/* Quick Links */}
           <div>
-            <h3 className="font-bold mb-4">Quick Links</h3>
+            <h3 className="font-bold mb-4">{t.footer.quickLinks}</h3>
             <ul className="space-y-2 text-gray-400 text-sm">
               <li>
                 <Link href="/" className="hover:text-white transition-colors">
-                  Home
+                  {t.nav.home}
                 </Link>
               </li>
               <li>
                 <Link href="/projects" className="hover:text-white transition-colors">
-                  Projects
+                  {t.nav.projects}
                 </Link>
               </li>
               <li>
                 <Link href="/about" className="hover:text-white transition-colors">
-                  About
+                  {t.nav.about}
                 </Link>
               </li>
               <li>
                 <Link href="/contact" className="hover:text-white transition-colors">
-                  Contact
+                  {t.nav.contact}
                 </Link>
               </li>
             </ul>
@@ -83,26 +84,26 @@ export function Footer() {
 
           {/* Support */}
           <div>
-            <h3 className="font-bold mb-4">Support</h3>
+            <h3 className="font-bold mb-4">{t.footer.support}</h3>
             <ul className="space-y-2 text-gray-400 text-sm">
               <li>
                 <a href="#" className="hover:text-white transition-colors">
-                  Help Center
+                  {t.footer.helpCenter}
                 </a>
               </li>
               <li>
                 <a href="#" className="hover:text-white transition-colors">
-                  Documentation
+                  {t.footer.documentation}
                 </a>
               </li>
               <li>
                 <a href="#" className="hover:text-white transition-colors">
-                  FAQ
+                  {t.footer.faq}
                 </a>
               </li>
               <li>
                 <a href="#" className="hover:text-white transition-colors">
-                  Contact Support
+                  {t.footer.contactSupport}
                 </a>
               </li>
             </ul>
@@ -110,26 +111,26 @@ export function Footer() {
 
           {/* Legal */}
           <div>
-            <h3 className="font-bold mb-4">Legal</h3>
+            <h3 className="font-bold mb-4">{t.footer.legal}</h3>
             <ul className="space-y-2 text-gray-400 text-sm">
               <li>
                 <a href="#" className="hover:text-white transition-colors">
-                  Privacy Policy
+                  {t.footer.privacyPolicy}
                 </a>
               </li>
               <li>
                 <a href="#" className="hover:text-white transition-colors">
-                  Terms of Service
+                  {t.footer.termsOfService}
                 </a>
               </li>
               <li>
                 <a href="#" className="hover:text-white transition-colors">
-                  Cookie Policy
+                  {t.footer.cookiePolicy}
                 </a>
               </li>
               <li>
                 <a href="#" className="hover:text-white transition-colors">
-                  Disclaimer
+                  {t.footer.disclaimer}
                 </a>
               </li>
             </ul>
@@ -138,16 +139,16 @@ export function Footer() {
 
         <div className="border-t border-gray-800 pt-8">
           <div className="flex flex-col md:flex-row justify-between items-center text-gray-400 text-sm">
-            <p>&copy; {currentYear} UmojaFund. All rights reserved.</p>
+            <p>© 2025 UmojaFund. {t.footer.rights}</p>
             <div className="flex space-x-6 mt-4 md:mt-0">
               <a href="#" className="hover:text-white transition-colors">
-                Twitter
+                {t.footer.twitter}
               </a>
               <a href="#" className="hover:text-white transition-colors">
-                Facebook
+                {t.footer.facebook}
               </a>
               <a href="#" className="hover:text-white transition-colors">
-                LinkedIn
+                {t.footer.linkedin}
               </a>
             </div>
           </div>
