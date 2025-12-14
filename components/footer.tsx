@@ -87,22 +87,22 @@ export function Footer() {
             <h3 className="font-bold mb-4">{t.footer.support}</h3>
             <ul className="space-y-2 text-gray-400 text-sm">
               <li>
-                <a href="#" className="hover:text-white transition-colors">
+                <a href="/help" className="hover:text-white transition-colors">
                   {t.footer.helpCenter}
                 </a>
               </li>
               <li>
-                <a href="#" className="hover:text-white transition-colors">
+                <a href="/docs" className="hover:text-white transition-colors">
                   {t.footer.documentation}
                 </a>
               </li>
               <li>
-                <a href="#" className="hover:text-white transition-colors">
+                <a href="/faq" className="hover:text-white transition-colors">
                   {t.footer.faq}
                 </a>
               </li>
               <li>
-                <a href="#" className="hover:text-white transition-colors">
+                <a href="/contact" className="hover:text-white transition-colors">
                   {t.footer.contactSupport}
                 </a>
               </li>
@@ -114,22 +114,22 @@ export function Footer() {
             <h3 className="font-bold mb-4">{t.footer.legal}</h3>
             <ul className="space-y-2 text-gray-400 text-sm">
               <li>
-                <a href="#" className="hover:text-white transition-colors">
+                <a href="/privacy" className="hover:text-white transition-colors">
                   {t.footer.privacyPolicy}
                 </a>
               </li>
               <li>
-                <a href="#" className="hover:text-white transition-colors">
+                <a href="/terms" className="hover:text-white transition-colors">
                   {t.footer.termsOfService}
                 </a>
               </li>
               <li>
-                <a href="#" className="hover:text-white transition-colors">
+                <a href="/cookies" className="hover:text-white transition-colors">
                   {t.footer.cookiePolicy}
                 </a>
               </li>
               <li>
-                <a href="#" className="hover:text-white transition-colors">
+                <a href="/disclaimer" className="hover:text-white transition-colors">
                   {t.footer.disclaimer}
                 </a>
               </li>
