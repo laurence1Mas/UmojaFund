@@ -2,10 +2,8 @@ import type React from "react"
 import type { Metadata } from "next"
 import { Geist, Geist_Mono } from "next/font/google"
 import { Analytics } from "@vercel/analytics/next"
-import { ThemeProvider } from "@/components/theme-provider"
-import { AuthProvider } from "@/lib/contexts/AuthContext"
 import "./globals.css"
-import { Providers } from "./providers"
+import { Providers } from "./providers" // Importez le Providers corrigé
 
 const geist = Geist({ subsets: ["latin"] })
 const geistMono = Geist_Mono({ subsets: ["latin"] })
@@ -58,12 +56,12 @@ export default function RootLayout({
 }: Readonly<{
   children: React.ReactNode
 }>) {
-
-
   return (
     <html lang="fr" suppressHydrationWarning>
       <body className={`${geist.className} antialiased`}>
-        <Providers>{children}</Providers>
+        <Providers> {/* Utilisez le Providers corrigé */}
+          {children}
+        </Providers>
         <Analytics />
       </body>
     </html>
