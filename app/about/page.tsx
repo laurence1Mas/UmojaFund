@@ -45,6 +45,13 @@ export default function About() {
   ]
 
   const team = [
+    
+    {
+      name: "Marcelin Mulezi",
+      role: "Team Leader",
+      image: "/team/marcelin.jpg",
+      department: "Direction"
+    },
     {
       name: "Laurence Masika",
       role: "Fullstack Developer",
@@ -52,15 +59,9 @@ export default function About() {
       department: "Technique"
     },
     {
-      name: "Marcelin Mulezi",
-      role: "Team Leader",
-      image: "/team/pic-1.png",
-      department: "Direction"
-    },
-    {
       name: "Robert Kule",
       role: "Software Developer",
-      image: "/team/pic-1.png",
+      image: "/team/robert.jpg",
       department: "Technique"
     },
     {
@@ -70,10 +71,16 @@ export default function About() {
       department: "Marketing"
     },
     {
-      name: "Jean-Claude",
+      name: "Jean-Claude Magugu",
       role: "Secrétaire",
-      image: "/team/pic-1.png",
+      image: "/team/jean-claude.jpg",
       department: "Administration"
+    },
+    {
+      name: "Pablo Balondani",
+      role: "Secrétaire",
+      image: "/team/pablo.jpg",
+      department: "Testeur"
     },
   ]
 
@@ -414,7 +421,7 @@ export default function About() {
               {t.about.team}
             </motion.h2>
 
-            <div className="grid sm:grid-cols-2 lg:grid-cols-5 gap-6">
+            <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
               {team.map((member, index) => (
                 <motion.div
                   key={index}
