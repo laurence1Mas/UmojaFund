@@ -1,12 +1,18 @@
 "use client";
 
 import Link from "next/link";
+import dynamic from "next/dynamic";
 import { useState } from "react";
 import { Menu, X } from "lucide-react";
 import { LanguageSwitcher } from "./language-switcher";
 import { translations } from "@/lib/i18n";
 import { useLanguage } from "@/app/providers";
-import { ConnectWallet } from "./wallet/connect-wallet";
+
+// Load ConnectWallet only on the client to avoid pulling WASM into the server build
+const ConnectWallet = dynamic(
+  () => import("./wallet/connect-wallet").then((mod) => mod.ConnectWallet),
+  { ssr: false }
+);
 
 export function Navbar() {
   const [isOpen, setIsOpen] = useState(false);

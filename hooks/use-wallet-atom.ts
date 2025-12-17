@@ -1,7 +1,8 @@
 import { useAtom, useAtomValue } from "jotai";
 import { useCallback, useEffect } from "react";
 
-import { BrowserWallet } from "@meshsdk/core";
+// Importing BrowserWallet dynamically on the client only to avoid pulling WebAssembly into the server build
+// (it gets loaded via a dynamic import inside useEffect).
 import {
   signDataAtom,
   walletInstanceAtom,
@@ -21,6 +22,12 @@ export function useWalletAtom() {
       // Only attempt to reconnect if we have a stored connection state but no wallet instance
       if (walletState.connected && walletState.walletName && !wallet) {
         try {
+          // Ensure this only runs in the browser
+          if (typeof window === "undefined") return;
+
+          // Dynamically import the wallet library on the client to avoid server-side WASM import
+          const { BrowserWallet } = await import("@meshsdk/core");
+
           console.log(
             "Attempting to reconnect wallet:",
             walletState.walletName
