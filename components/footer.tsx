@@ -8,10 +8,9 @@ export function Footer() {
   const { t } = useLanguage()
 
   return (
-
-    <footer className="bg-gray-900 text-white py-12">
+    <footer className="bg-gray-900 text-white">
       {/* Newsletter Section - Join Our Community */}
-      <div className=" w-auto bg-gradient-to-r from-primary/10 to-secondary/10 border-b border-gray-800 mb-8">
+      <div className="w-full bg-gradient-to-r from-primary/10 to-secondary/10 border-b border-gray-800">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
           <div className="max-w-3xl mx-auto text-center">
             <div className="flex justify-center mb-4">
@@ -41,115 +40,118 @@ export function Footer() {
           </div>
         </div>
       </div>
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        
-        <div className="grid md:grid-cols-4 gap-8 mb-8">
-          {/* Brand */}
-          <div>
-            <div className="flex items-center space-x-2 mb-4">
-              <div className="w-8 h-8 bg-secondary rounded-lg flex items-center justify-center">
-                <img src="/umoja.png" alt="" className="rounded-lg w-auto" />
+      
+      {/* Main Footer Content */}
+      <div className="py-12">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="grid md:grid-cols-4 gap-8 mb-8">
+            {/* Brand */}
+            <div>
+              <div className="flex items-center space-x-2 mb-4">
+                <div className="w-8 h-8 bg-secondary rounded-lg flex items-center justify-center">
+                  <img src="/umoja.png" alt="" className="rounded-lg w-auto" />
+                </div>
+                <span className="font-bold text-lg">UmojaFund</span>
               </div>
-              <span className="font-bold text-lg">UmojaFund</span>
+              <p className="text-gray-400 text-sm">{t.footer.brandDesc}</p>
             </div>
-            <p className="text-gray-400 text-sm">{t.footer.brandDesc}</p>
+
+            {/* Quick Links */}
+            <div>
+              <h3 className="font-bold mb-4">{t.footer.quickLinks}</h3>
+              <ul className="space-y-2 text-gray-400 text-sm">
+                <li>
+                  <Link href="/" className="hover:text-white transition-colors">
+                    {t.nav.home}
+                  </Link>
+                </li>
+                <li>
+                  <Link href="/projects" className="hover:text-white transition-colors">
+                    {t.nav.projects}
+                  </Link>
+                </li>
+                <li>
+                  <Link href="/about" className="hover:text-white transition-colors">
+                    {t.nav.about}
+                  </Link>
+                </li>
+                <li>
+                  <Link href="/contact" className="hover:text-white transition-colors">
+                    {t.nav.contact}
+                  </Link>
+                </li>
+              </ul>
+            </div>
+
+            {/* Support */}
+            <div>
+              <h3 className="font-bold mb-4">{t.footer.support}</h3>
+              <ul className="space-y-2 text-gray-400 text-sm">
+                <li>
+                  <a href="/help" className="hover:text-white transition-colors">
+                    {t.footer.helpCenter}
+                  </a>
+                </li>
+                <li>
+                  <a href="/docs" className="hover:text-white transition-colors">
+                    {t.footer.documentation}
+                  </a>
+                </li>
+                <li>
+                  <a href="/faq" className="hover:text-white transition-colors">
+                    {t.footer.faq}
+                  </a>
+                </li>
+                <li>
+                  <a href="/contact" className="hover:text-white transition-colors">
+                    {t.footer.contactSupport}
+                  </a>
+                </li>
+              </ul>
+            </div>
+
+            {/* Legal */}
+            <div>
+              <h3 className="font-bold mb-4">{t.footer.legal}</h3>
+              <ul className="space-y-2 text-gray-400 text-sm">
+                <li>
+                  <a href="/privacy" className="hover:text-white transition-colors">
+                    {t.footer.privacyPolicy}
+                  </a>
+                </li>
+                <li>
+                  <a href="/terms" className="hover:text-white transition-colors">
+                    {t.footer.termsOfService}
+                  </a>
+                </li>
+                <li>
+                  <a href="/cookies" className="hover:text-white transition-colors">
+                    {t.footer.cookiePolicy}
+                  </a>
+                </li>
+                <li>
+                  <a href="/disclaimer" className="hover:text-white transition-colors">
+                    {t.footer.disclaimer}
+                  </a>
+                </li>
+              </ul>
+            </div>
           </div>
 
-          {/* Quick Links */}
-          <div>
-            <h3 className="font-bold mb-4">{t.footer.quickLinks}</h3>
-            <ul className="space-y-2 text-gray-400 text-sm">
-              <li>
-                <Link href="/" className="hover:text-white transition-colors">
-                  {t.nav.home}
-                </Link>
-              </li>
-              <li>
-                <Link href="/projects" className="hover:text-white transition-colors">
-                  {t.nav.projects}
-                </Link>
-              </li>
-              <li>
-                <Link href="/about" className="hover:text-white transition-colors">
-                  {t.nav.about}
-                </Link>
-              </li>
-              <li>
-                <Link href="/contact" className="hover:text-white transition-colors">
-                  {t.nav.contact}
-                </Link>
-              </li>
-            </ul>
-          </div>
-
-          {/* Support */}
-          <div>
-            <h3 className="font-bold mb-4">{t.footer.support}</h3>
-            <ul className="space-y-2 text-gray-400 text-sm">
-              <li>
+          <div className="border-t border-gray-800 pt-8">
+            <div className="flex flex-col md:flex-row justify-between items-center text-gray-400 text-sm">
+              <p>© 2025 UmojaFund. {t.footer.rights}</p>
+              <div className="flex space-x-6 mt-4 md:mt-0">
                 <a href="#" className="hover:text-white transition-colors">
-                  {t.footer.helpCenter}
+                  {t.footer.twitter}
                 </a>
-              </li>
-              <li>
                 <a href="#" className="hover:text-white transition-colors">
-                  {t.footer.documentation}
+                  {t.footer.facebook}
                 </a>
-              </li>
-              <li>
                 <a href="#" className="hover:text-white transition-colors">
-                  {t.footer.faq}
+                  {t.footer.linkedin}
                 </a>
-              </li>
-              <li>
-                <a href="#" className="hover:text-white transition-colors">
-                  {t.footer.contactSupport}
-                </a>
-              </li>
-            </ul>
-          </div>
-
-          {/* Legal */}
-          <div>
-            <h3 className="font-bold mb-4">{t.footer.legal}</h3>
-            <ul className="space-y-2 text-gray-400 text-sm">
-              <li>
-                <a href="#" className="hover:text-white transition-colors">
-                  {t.footer.privacyPolicy}
-                </a>
-              </li>
-              <li>
-                <a href="#" className="hover:text-white transition-colors">
-                  {t.footer.termsOfService}
-                </a>
-              </li>
-              <li>
-                <a href="#" className="hover:text-white transition-colors">
-                  {t.footer.cookiePolicy}
-                </a>
-              </li>
-              <li>
-                <a href="#" className="hover:text-white transition-colors">
-                  {t.footer.disclaimer}
-                </a>
-              </li>
-            </ul>
-          </div>
-        </div>
-
-        <div className="border-t border-gray-800 pt-8">
-          <div className="flex flex-col md:flex-row justify-between items-center text-gray-400 text-sm">
-            <p>© 2025 UmojaFund. {t.footer.rights}</p>
-            <div className="flex space-x-6 mt-4 md:mt-0">
-              <a href="#" className="hover:text-white transition-colors">
-                {t.footer.twitter}
-              </a>
-              <a href="#" className="hover:text-white transition-colors">
-                {t.footer.facebook}
-              </a>
-              <a href="#" className="hover:text-white transition-colors">
-                {t.footer.linkedin}
-              </a>
+              </div>
             </div>
           </div>
         </div>
