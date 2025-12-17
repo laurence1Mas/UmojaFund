@@ -1,6 +1,7 @@
 import { atom } from "jotai";
 import { atomWithStorage, createJSONStorage } from "jotai/utils";
-import { BrowserWallet, DataSignature } from "@meshsdk/core";
+// Import types only to avoid pulling realtime runtime code (and WASM) into server bundles
+import type { BrowserWallet, DataSignature } from "@meshsdk/core";
 
 /**
  * Constants for wallet configuration
@@ -184,6 +185,14 @@ async function connectWallet(
   setState: (atom: typeof walletStateAtom, value: WalletState) => void
 ): Promise<WalletConnectionResult> {
   try {
+    // Only run wallet enable on the client
+    if (typeof window === "undefined") {
+      throw new WalletConnectionError("Wallet connection must be performed in the browser");
+    }
+
+    // Dynamically import to avoid bundling WASM/server-side imports
+    const { BrowserWallet } = await import("@meshsdk/core");
+
     // Enable the browser wallet
     const browserWallet = await BrowserWallet.enable(walletId);
 
