@@ -60,7 +60,7 @@ export default function About() {
     },
     {
       name: "Robert Kule",
-      role: "Software Developer",
+      role: "Data and Web Engineer",
       image: "/team/robert.jpg",
       department: "Technique"
     },

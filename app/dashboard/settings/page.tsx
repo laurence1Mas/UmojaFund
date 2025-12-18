@@ -392,7 +392,7 @@ export default function Settings() {
                             value={profile.phone}
                             onChange={handleProfileChange}
                             className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
-                            placeholder="+1 (555) 123-4567"
+                            placeholder="+243 973822439"
                           />
                         </div>
                       </div>

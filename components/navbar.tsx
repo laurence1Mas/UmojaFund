@@ -34,7 +34,7 @@ export function Navbar() {
           {/* Logo */}
           <Link href="/" className="flex items-center space-x-2">
             <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center">
-              <img src="/umoja.png" alt="logo" />
+              <img src="/umoja.PNG" alt="logo" />
             </div>
             <span className="font-bold text-xl text-primary">UmojaFund</span>
           </Link>

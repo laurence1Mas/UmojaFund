@@ -68,8 +68,8 @@ export default function Contact() {
     {
       icon: Phone,
       title: t.contact.phone,
-      value: "+1 (234) 567-890",
-      link: "tel:+1234567890",
+      value: "+243 973822439",
+      link: "tel:+243973822439",
       description: "Lundi - Vendredi, 9h-18h",
       color: "from-green-500 to-emerald-500"
     },
