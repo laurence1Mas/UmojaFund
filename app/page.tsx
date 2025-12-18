@@ -238,7 +238,7 @@ export default function Home() {
             className="w-40 h-48 bg-white rounded-2xl shadow-xl border-2 border-blue-100 flex items-center justify-center p-4"
           >
             <img
-              src="/logo-img.png"
+              src="/logo-img.PNG"
               alt="UmojaFund"
               className="w-full h-full object-contain"
             />
@@ -255,7 +255,7 @@ export default function Home() {
           <div className="absolute inset-0 bg-gradient-to-br from-blue-50 to-white rounded-2xl" />
           <div className="relative w-full h-full flex items-center justify-center p-4">
             <img
-              src="/logo-img.png"
+              src="/logo-img.PNG"
               alt="UmojaFund"
               className="w-full h-full object-contain"
             />
