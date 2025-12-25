@@ -26,7 +26,7 @@ export async function POST(request: NextRequest, context: RouteContext) {
     const payload = verifyToken(token);
     
     const body = await request.json();
-    const { amountADA } = body;
+    const { amountADA, txHash } = body;
     
     if (!amountADA || amountADA < 1) {
       return NextResponse.json(
@@ -68,7 +68,45 @@ export async function POST(request: NextRequest, context: RouteContext) {
       );
     }
     
-    // Créer une contribution en attente
+    // Si un txHash est fourni (transaction déjà signée), créer une contribution confirmée
+    if (txHash) {
+      // Vérifier si la transaction existe déjà
+      const existingContribution = await Contribution.findOne({ txHash });
+      if (existingContribution) {
+        return NextResponse.json(
+          { success: false, error: 'Cette transaction a déjà été enregistrée' },
+          { status: 409 }
+        );
+      }
+      
+      // Créer une contribution confirmée directement
+      const contribution = new Contribution({
+        project: project._id,
+        user: payload.userId,
+        amountADA,
+        txHash,
+        status: 'confirmed',
+      });
+      
+      await contribution.save();
+      
+      // Mettre à jour le montant collecté
+      project.fundedAmount = (project.fundedAmount || 0) + amountADA;
+      await project.save();
+      
+      return NextResponse.json({
+        success: true,
+        message: 'Contribution confirmée avec succès',
+        data: {
+          contributionId: contribution._id,
+          amountADA,
+          status: 'confirmed',
+          txHash: contribution.txHash,
+        },
+      });
+    }
+    
+    // Sinon, créer une contribution en attente (mode manuel)
     const contribution = new Contribution({
       project: project._id,
       user: payload.userId,
