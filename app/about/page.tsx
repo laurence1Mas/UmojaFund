@@ -66,9 +66,9 @@ export default function About() {
     },
     {
       name: "Christophe",
-      role: "Community Manager",
+      role: "dev Back-end",
       image: "/team/pic-1.png",
-      department: "Marketing"
+      department: "Technique"
     },
     {
       name: "Jean-Claude Magugu",
